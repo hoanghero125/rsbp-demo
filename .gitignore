@@ -1,0 +1,64 @@
+# Claude files
+.claude/
+*.claude
+claude.json
+.claude.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+/var/log/rsbp_system.log
+
+# Audio/Image files (ignore temporary test files)
+/tmp/*.wav
+/tmp/*.jpg
+
+# System files
+*.service.bak
+*.py.bak
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.prof
+
+# Local configuration overrides
+local_config.py
+secrets.py
+.env
+.env.local
