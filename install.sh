@@ -50,14 +50,17 @@ python3 -c "import requests; print('✓ requests')" 2>/dev/null || echo "⚠ War
 python3 -c "import pyaudio; print('✓ PyAudio')" 2>/dev/null || echo "⚠ Warning: PyAudio not found"
 
 echo ""
-echo "Step 7: Create recording directories..."
-mkdir -p /home/pi/recordings
-mkdir -p /home/pi/Pictures
-chown pi:pi /home/pi/recordings
-chown pi:pi /home/pi/Pictures
-chmod 755 /home/pi/recordings
-chmod 755 /home/pi/Pictures
-echo "✓ Directories created"
+echo "Step 7: Create recording directories inside rsbp-demo..."
+# Create directories inside the project folder
+mkdir -p /home/thuongvv/rsbp-demo/recordings
+mkdir -p /home/thuongvv/rsbp-demo/pictures
+mkdir -p /home/thuongvv/rsbp-demo/logs
+
+# Set proper permissions
+chmod 755 /home/thuongvv/rsbp-demo/recordings
+chmod 755 /home/thuongvv/rsbp-demo/pictures
+chmod 755 /home/thuongvv/rsbp-demo/logs
+echo "✓ Directories created in /home/thuongvv/rsbp-demo"
 
 echo ""
 echo "Step 8: Copy application files..."

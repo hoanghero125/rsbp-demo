@@ -15,13 +15,13 @@ AUDIO_CONFIG = {
 
 # IMPORTANT: Recording Configuration
 RECORDING_CONFIG = {
-    "output_dir": "/home/pi/recordings",
+    "output_dir": "/home/thuongvv/rsbp-demo/recordings",
     "file_prefix": "audio",
 }
 
 # IMPORTANT: Image Capture Configuration
 IMAGE_CONFIG = {
-    "output_dir": "/home/pi/Pictures",
+    "output_dir": "/home/thuongvv/rsbp-demo/pictures",
     "file_prefix": "recording",
     "width": 1920,
     "height": 1440,
@@ -57,7 +57,7 @@ PLAYBACK_CONFIG = {
 # IMPORTANT: Logging Configuration
 LOGGING_CONFIG = {
     "level": "INFO",  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-    "log_file": "/var/log/rsbp_system.log",
+    "log_file": "/home/thuongvv/rsbp-demo/logs/rsbp_system.log",
     "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     "date_format": "%Y-%m-%d %H:%M:%S",
 }
