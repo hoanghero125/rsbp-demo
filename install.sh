@@ -11,8 +11,8 @@ echo ""
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
-   echo "ERROR: This script must be run as root (use sudo)"
-   exit 1
+    echo "ERROR: This script must be run as root (use sudo)"
+    exit 1
 fi
 
 echo "Step 1: Update system packages..."
@@ -33,12 +33,14 @@ apt-get install -y libraspberrypi-bin libraspberrypi-dev libraspberrypi0
 apt-get install -y rpicam-apps
 
 echo ""
-echo "Step 5: Install GPIO library..."
-pip3 install RPi.GPIO
+echo "Step 5: Install GPIO library (FIXED: Using apt-get)..."
+# FIX: Installing RPi.GPIO via apt-get to avoid "externally-managed-environment" error
+apt-get install -y python3-rpi.gpio
 
 echo ""
-echo "Step 6: Install Python requirements..."
-pip3 install -r requirements.txt
+echo "Step 6: Install Python requirements (FIXED: Added --break-system-packages)..."
+# FIX: Using --break-system-packages to allow pip installation outside of a virtual environment
+pip3 install -r requirements.txt --break-system-packages
 
 echo ""
 echo "Step 7: Create recording directories..."
@@ -66,6 +68,8 @@ echo ""
 echo "Step 10: Configure sound card..."
 # Set ReSpeaker as default input device
 echo "PCM card: Setting ReSpeaker as default audio device..."
+# NOTE: This step is likely incomplete and may require editing /etc/modprobe.d/alsa-base.conf or similar
+# The ReSpeaker install script in Step 9 *should* handle this, but manual config might be needed later.
 
 echo ""
 echo "Step 11: Enable services..."
