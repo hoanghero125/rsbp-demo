@@ -1,0 +1,70 @@
+(venv) pi@raspberrypi:~/rsbp-demo $ pip3 install -r requirements.txt 
+Collecting requests>=2.31.0 (from -r requirements.txt (line 4))
+  Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Collecting PyAudio>=0.2.13 (from -r requirements.txt (line 7))
+  Downloading PyAudio-0.2.14.tar.gz (47 kB)
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Collecting RPi.GPIO>=0.7.1 (from -r requirements.txt (line 10))
+  Downloading RPi.GPIO-0.7.1.tar.gz (29 kB)
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Collecting charset_normalizer<4,>=2 (from requests>=2.31.0->-r requirements.txt (line 4))
+  Downloading charset_normalizer-3.4.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (37 kB)
+Collecting idna<4,>=2.5 (from requests>=2.31.0->-r requirements.txt (line 4))
+  Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+Collecting urllib3<3,>=1.21.1 (from requests>=2.31.0->-r requirements.txt (line 4))
+  Downloading urllib3-2.5.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting certifi>=2017.4.17 (from requests>=2.31.0->-r requirements.txt (line 4))
+  Downloading certifi-2025.11.12-py3-none-any.whl.metadata (2.5 kB)
+Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+Downloading charset_normalizer-3.4.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (147 kB)
+Downloading idna-3.11-py3-none-any.whl (71 kB)
+Downloading urllib3-2.5.0-py3-none-any.whl (129 kB)
+Downloading certifi-2025.11.12-py3-none-any.whl (159 kB)
+Building wheels for collected packages: PyAudio, RPi.GPIO
+  Building wheel for PyAudio (pyproject.toml) ... error
+  error: subprocess-exited-with-error
+  
+  × Building wheel for PyAudio (pyproject.toml) did not run successfully.
+  │ exit code: 1
+  ╰─> [27 lines of output]
+      /tmp/pip-build-env-g8lot9d3/overlay/lib/python3.13/site-packages/setuptools/dist.py:759: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+      !!
+      
+              ********************************************************************************
+              Please consider removing the following classifiers in favor of a SPDX license expression:
+      
+              License :: OSI Approved :: MIT License
+      
+              See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+              ********************************************************************************
+      
+      !!
+        self._finalize_license_expression()
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-aarch64-cpython-313/pyaudio
+      copying src/pyaudio/__init__.py -> build/lib.linux-aarch64-cpython-313/pyaudio
+      running build_ext
+      building 'pyaudio._portaudio' extension
+      creating build/temp.linux-aarch64-cpython-313/src/pyaudio
+      aarch64-linux-gnu-gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -I/usr/local/include -I/usr/include -I/home/pi/rsbp-demo/venv/include -I/usr/include/python3.13 -c src/pyaudio/device_api.c -o build/temp.linux-aarch64-cpython-313/src/pyaudio/device_api.o
+      src/pyaudio/device_api.c:9:10: fatal error: portaudio.h: No such file or directory
+          9 | #include "portaudio.h"
+            |          ^~~~~~~~~~~~~
+      compilation terminated.
+      error: command '/usr/bin/aarch64-linux-gnu-gcc' failed with exit code 1
+      [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+  ERROR: Failed building wheel for PyAudio
+  Building wheel for RPi.GPIO (pyproject.toml) ... done
+  Created wheel for RPi.GPIO: filename=rpi_gpio-0.7.1-cp313-cp313-linux_aarch64.whl size=69285 sha256=b8ac84ee448be4f720d1b664b725ae4b7dbaf7ffb0075ddee314c5e390923935
+  Stored in directory: /home/pi/.cache/pip/wheels/fe/f1/d8/b4cf15eedd221009444483ab72646dee0b203f4aa2c185ec1c
+Successfully built RPi.GPIO
+Failed to build PyAudio
+ERROR: Failed to build installable wheels for some pyproject.toml based projects (PyAudio)
