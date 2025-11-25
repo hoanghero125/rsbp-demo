@@ -62,6 +62,12 @@ class ButtonHandler:
             # Pull-up means button press will pull pin LOW (falling edge)
             GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+            # Remove any existing event detection on this pin (from previous runs)
+            try:
+                GPIO.remove_event_detect(self.pin)
+            except Exception:
+                pass  # Pin may not have event detection, which is fine
+
             # Set up event detection for button press
             GPIO.add_event_detect(
                 self.pin,
@@ -160,6 +166,13 @@ class ButtonHandler:
         """
         if GPIO_AVAILABLE and self.is_initialized:
             try:
+                # Remove event detection first
+                try:
+                    GPIO.remove_event_detect(self.pin)
+                except Exception:
+                    pass  # Event detection may already be removed
+
+                # Then cleanup the GPIO pin
                 GPIO.cleanup(self.pin)
                 self.is_initialized = False
                 logger.info("GPIO cleaned up")
