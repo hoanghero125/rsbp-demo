@@ -1,16 +1,20 @@
 # Disability Support System - Python Dependencies
+# Install these inside your venv AFTER setting up system packages
 
 # HTTP client for API communication
 requests>=2.31.0
 
 # Audio input/output handling
+# NOTE: If pip install fails, use system package: sudo apt install python3-pyaudio
 PyAudio>=0.2.13
 
 # GPIO control for Raspberry Pi
-# IMPORTANT: RPi.GPIO must be installed via system package manager (apt)
-# not via pip to ensure proper permissions for GPIO access
-# Install with: sudo apt install python3-rpi.gpio
-# RPi.GPIO>=0.7.1  # COMMENTED OUT - use system package instead
+# IMPORTANT: You MUST install the system package first:
+#   sudo apt install python3-rpi.gpio
+# Then create venv with --system-site-packages flag:
+#   python3 -m venv --system-site-packages venv
+# This allows the venv to access the system-installed RPi.GPIO which has proper permissions
+# DO NOT install RPi.GPIO via pip - it won't have GPIO permissions!
 
 # No additional dependencies needed for:
 # - wave: Built-in Python module for WAV file handling
