@@ -1,70 +1,45 @@
-(venv) pi@raspberrypi:~/rsbp-demo $ pip3 install -r requirements.txt 
-Collecting requests>=2.31.0 (from -r requirements.txt (line 4))
-  Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
-Collecting PyAudio>=0.2.13 (from -r requirements.txt (line 7))
-  Downloading PyAudio-0.2.14.tar.gz (47 kB)
-  Installing build dependencies ... done
-  Getting requirements to build wheel ... done
-  Preparing metadata (pyproject.toml) ... done
-Collecting RPi.GPIO>=0.7.1 (from -r requirements.txt (line 10))
-  Downloading RPi.GPIO-0.7.1.tar.gz (29 kB)
-  Installing build dependencies ... done
-  Getting requirements to build wheel ... done
-  Preparing metadata (pyproject.toml) ... done
-Collecting charset_normalizer<4,>=2 (from requests>=2.31.0->-r requirements.txt (line 4))
-  Downloading charset_normalizer-3.4.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl.metadata (37 kB)
-Collecting idna<4,>=2.5 (from requests>=2.31.0->-r requirements.txt (line 4))
-  Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
-Collecting urllib3<3,>=1.21.1 (from requests>=2.31.0->-r requirements.txt (line 4))
-  Downloading urllib3-2.5.0-py3-none-any.whl.metadata (6.5 kB)
-Collecting certifi>=2017.4.17 (from requests>=2.31.0->-r requirements.txt (line 4))
-  Downloading certifi-2025.11.12-py3-none-any.whl.metadata (2.5 kB)
-Downloading requests-2.32.5-py3-none-any.whl (64 kB)
-Downloading charset_normalizer-3.4.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (147 kB)
-Downloading idna-3.11-py3-none-any.whl (71 kB)
-Downloading urllib3-2.5.0-py3-none-any.whl (129 kB)
-Downloading certifi-2025.11.12-py3-none-any.whl (159 kB)
-Building wheels for collected packages: PyAudio, RPi.GPIO
-  Building wheel for PyAudio (pyproject.toml) ... error
-  error: subprocess-exited-with-error
-  
-  × Building wheel for PyAudio (pyproject.toml) did not run successfully.
-  │ exit code: 1
-  ╰─> [27 lines of output]
-      /tmp/pip-build-env-g8lot9d3/overlay/lib/python3.13/site-packages/setuptools/dist.py:759: SetuptoolsDeprecationWarning: License classifiers are deprecated.
-      !!
-      
-              ********************************************************************************
-              Please consider removing the following classifiers in favor of a SPDX license expression:
-      
-              License :: OSI Approved :: MIT License
-      
-              See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
-              ********************************************************************************
-      
-      !!
-        self._finalize_license_expression()
-      running bdist_wheel
-      running build
-      running build_py
-      creating build/lib.linux-aarch64-cpython-313/pyaudio
-      copying src/pyaudio/__init__.py -> build/lib.linux-aarch64-cpython-313/pyaudio
-      running build_ext
-      building 'pyaudio._portaudio' extension
-      creating build/temp.linux-aarch64-cpython-313/src/pyaudio
-      aarch64-linux-gnu-gcc -fno-strict-overflow -Wsign-compare -DNDEBUG -g -O2 -Wall -fPIC -I/usr/local/include -I/usr/include -I/home/pi/rsbp-demo/venv/include -I/usr/include/python3.13 -c src/pyaudio/device_api.c -o build/temp.linux-aarch64-cpython-313/src/pyaudio/device_api.o
-      src/pyaudio/device_api.c:9:10: fatal error: portaudio.h: No such file or directory
-          9 | #include "portaudio.h"
-            |          ^~~~~~~~~~~~~
-      compilation terminated.
-      error: command '/usr/bin/aarch64-linux-gnu-gcc' failed with exit code 1
-      [end of output]
-  
-  note: This error originates from a subprocess, and is likely not a problem with pip.
-  ERROR: Failed building wheel for PyAudio
-  Building wheel for RPi.GPIO (pyproject.toml) ... done
-  Created wheel for RPi.GPIO: filename=rpi_gpio-0.7.1-cp313-cp313-linux_aarch64.whl size=69285 sha256=b8ac84ee448be4f720d1b664b725ae4b7dbaf7ffb0075ddee314c5e390923935
-  Stored in directory: /home/pi/.cache/pip/wheels/fe/f1/d8/b4cf15eedd221009444483ab72646dee0b203f4aa2c185ec1c
-Successfully built RPi.GPIO
-Failed to build PyAudio
-ERROR: Failed to build installable wheels for some pyproject.toml based projects (PyAudio)
+============================================================
+2025-11-25 19:39:08,505 - INFO - TEST 4: GPIO Button
+2025-11-25 19:39:08,506 - INFO - ============================================================
+2025-11-25 19:39:08,592 - INFO - ButtonHandler initialized for GPIO pin 17
+2025-11-25 19:39:08,602 - INFO - GPIO initialized successfully on pin 17
+2025-11-25 19:39:08,603 - INFO - Please press the button on GPIO pin 17 within 10 seconds...
+2025-11-25 19:39:16,878 - INFO - Button pressed on GPIO 17
+2025-11-25 19:39:16,879 - INFO - Button press detected!
+2025-11-25 19:39:16,913 - INFO - SUCCESS: Button is working!
+2025-11-25 19:39:16,915 - INFO - GPIO cleaned up
+
+Enter choice (0-6): 5
+2025-11-25 19:40:14,965 - INFO - 
+============================================================
+2025-11-25 19:40:14,965 - INFO - TEST 5: Complete Workflow (Button + Record + Camera + Playback)
+2025-11-25 19:40:14,965 - INFO - ============================================================
+2025-11-25 19:40:14,968 - ERROR - FAILED: No module named 'pyaudio'
+
+Enter choice (0-6): ^C2025-11-25 19:40:25,640 - INFO - 
+Exiting...
+pi@raspberrypi:~/rsbp-demo $ source venv/bin/activate
+(venv) pi@raspberrypi:~/rsbp-demo $ python3 test_hardware.py 
+2025-11-25 19:40:37,778 - INFO - 
+============================================================
+2025-11-25 19:40:37,778 - INFO - DISABILITY SUPPORT SYSTEM - HARDWARE TEST
+2025-11-25 19:40:37,779 - INFO - ============================================================
+2025-11-25 19:40:37,779 - INFO - 
+Select a test to run:
+2025-11-25 19:40:37,779 - INFO - 1. Test Camera
+2025-11-25 19:40:37,779 - INFO - 2. Test Microphone (record 3 seconds)
+2025-11-25 19:40:37,779 - INFO - 3. Test Speaker (playback recorded audio)
+2025-11-25 19:40:37,779 - INFO - 4. Test Button
+2025-11-25 19:40:37,779 - INFO - 5. Test Complete Workflow
+2025-11-25 19:40:37,779 - INFO - 6. Run All Tests
+2025-11-25 19:40:37,779 - INFO - 0. Exit
+
+Enter choice (0-6): 4
+2025-11-25 19:40:40,036 - INFO - 
+============================================================
+2025-11-25 19:40:40,037 - INFO - TEST 4: GPIO Button
+2025-11-25 19:40:40,037 - INFO - ============================================================
+2025-11-25 19:40:40,048 - INFO - ButtonHandler initialized for GPIO pin 17
+2025-11-25 19:40:40,049 - ERROR - Failed to initialize GPIO: Failed to add edge detection
+2025-11-25 19:40:40,050 - WARNING - WARNING: Could not initialize GPIO (may not be on Raspberry Pi)
+2025-11-25 19:40:40,051 - INFO - GPIO test skipped
