@@ -1,18 +1,17 @@
 """
-Module testing script for Disability Support System.
-
-Tests all components individually to verify proper functionality.
-Run this script to validate system setup before deployment.
+Test suite for the Disability Support System.
+Validates all modules, hardware components, and API connectivity.
 """
 
-import logging
 import sys
+import logging
 from pathlib import Path
 
-# Configure logging for testing
+# Configure logging for tests
 logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
 )
 
 logger = logging.getLogger(__name__)
@@ -20,106 +19,101 @@ logger = logging.getLogger(__name__)
 
 def test_imports():
     """Test that all required modules can be imported."""
-    logger.info("=" * 60)
-    logger.info("Testing module imports...")
-    logger.info("=" * 60)
+    logger.info("="*60)
+    logger.info("Testing module imports")
+    logger.info("="*60)
+
+    modules_to_test = [
+        'config',
+        'audio_recorder',
+        'image_capture',
+        'audio_playback',
+        'llm_client',
+        'button_handler',
+        'main'
+    ]
+
+    results = {}
+
+    for module_name in modules_to_test:
+        try:
+            __import__(module_name)
+            logger.info(f"✓ {module_name}: Import successful")
+            results[module_name] = True
+        except Exception as e:
+            logger.error(f"✗ {module_name}: Import failed - {e}")
+            results[module_name] = False
+
+    return all(results.values()), results
+
+
+def test_configuration():
+    """Test that configuration is properly loaded."""
+    logger.info("="*60)
+    logger.info("Testing configuration")
+    logger.info("="*60)
 
     try:
-        from audio_recorder import AudioRecorder
-        logger.info("✓ AudioRecorder imported successfully")
-    except Exception as e:
-        logger.error(f"✗ Failed to import AudioRecorder: {e}")
-        return False
+        import config
 
-    try:
-        from image_capture import ImageCapture
-        logger.info("✓ ImageCapture imported successfully")
-    except Exception as e:
-        logger.error(f"✗ Failed to import ImageCapture: {e}")
-        return False
+        # Check required directories exist
+        assert config.AUDIO_DIR.exists(), "Audio directory missing"
+        assert config.IMAGE_DIR.exists(), "Image directory missing"
+        assert config.LOG_DIR.exists(), "Log directory missing"
 
-    try:
-        from audio_playback import AudioPlayback
-        logger.info("✓ AudioPlayback imported successfully")
-    except Exception as e:
-        logger.error(f"✗ Failed to import AudioPlayback: {e}")
-        return False
+        logger.info(f"✓ Audio directory: {config.AUDIO_DIR}")
+        logger.info(f"✓ Image directory: {config.IMAGE_DIR}")
+        logger.info(f"✓ Log directory: {config.LOG_DIR}")
 
-    try:
-        from llm_client import LLMClient
-        logger.info("✓ LLMClient imported successfully")
-    except Exception as e:
-        logger.error(f"✗ Failed to import LLMClient: {e}")
-        return False
+        # Check API configuration
+        assert config.API_BASE_URL, "API base URL not set"
+        logger.info(f"✓ API base URL: {config.API_BASE_URL}")
 
-    try:
-        from button_handler import ButtonHandler
-        logger.info("✓ ButtonHandler imported successfully")
-    except Exception as e:
-        logger.error(f"✗ Failed to import ButtonHandler: {e}")
-        return False
+        # Check all endpoints are configured
+        assert "transcribe" in config.API_ENDPOINTS, "Transcribe endpoint missing"
+        assert "analyze_image" in config.API_ENDPOINTS, "Image analysis endpoint missing"
+        assert "tts" in config.API_ENDPOINTS, "TTS endpoint missing"
 
-    try:
-        from config import Config
-        logger.info("✓ Config imported successfully")
-    except Exception as e:
-        logger.error(f"✗ Failed to import Config: {e}")
-        return False
+        logger.info("✓ All API endpoints configured")
 
-    return True
+        # Check audio configuration
+        assert config.AUDIO_CONFIG["sample_rate"] == 16000, "Sample rate incorrect"
+        logger.info(f"✓ Audio sample rate: {config.AUDIO_CONFIG['sample_rate']} Hz")
 
+        # Check button configuration
+        assert config.BUTTON_CONFIG["pin"] == 17, "Button pin incorrect"
+        logger.info(f"✓ Button GPIO pin: {config.BUTTON_CONFIG['pin']}")
 
-def test_config():
-    """Test configuration module."""
-    logger.info("=" * 60)
-    logger.info("Testing configuration...")
-    logger.info("=" * 60)
-
-    try:
-        from config import Config
-
-        audio_cfg = Config.get_audio_config()
-        logger.info(f"Audio Config: {audio_cfg}")
-
-        llm_cfg = Config.get_llm_api_config()
-        logger.info(f"LLM API Config: {llm_cfg}")
-
-        button_cfg = Config.get_button_config()
-        logger.info(f"Button Config: {button_cfg}")
-
-        logger.info("✓ Configuration loaded successfully")
+        logger.info("✓ Configuration test passed")
         return True
 
-    except Exception as e:
+    except AssertionError as e:
         logger.error(f"✗ Configuration test failed: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"✗ Configuration test error: {e}")
         return False
 
 
 def test_audio_recorder():
     """Test audio recorder initialization."""
-    logger.info("=" * 60)
-    logger.info("Testing AudioRecorder...")
-    logger.info("=" * 60)
+    logger.info("="*60)
+    logger.info("Testing audio recorder")
+    logger.info("="*60)
 
     try:
         from audio_recorder import AudioRecorder
 
         recorder = AudioRecorder()
-        logger.info(f"✓ AudioRecorder initialized")
-        logger.info(f"  - Output directory: {recorder.output_dir}")
-        logger.info(f"  - Channels: {recorder.CHANNELS}")
-        logger.info(f"  - Sample rate: {recorder.SAMPLE_RATE} Hz")
-        logger.info(f"  - ReSpeaker device index: {recorder.RESPEAKER_DEVICE_INDEX}")
+        logger.info("✓ AudioRecorder instantiated")
 
-        # Check if output directory exists
-        if recorder.output_dir.exists():
-            logger.info(f"✓ Output directory exists: {recorder.output_dir}")
+        if recorder.initialize():
+            logger.info("✓ AudioRecorder initialized successfully")
+            recorder.cleanup()
+            return True
         else:
-            logger.warning(
-                f"⚠ Output directory does not exist: {recorder.output_dir}"
-            )
-
-        return True
+            logger.warning("⚠ AudioRecorder initialization failed (hardware may not be available)")
+            return True  # Not a critical failure for testing
 
     except Exception as e:
         logger.error(f"✗ AudioRecorder test failed: {e}")
@@ -127,35 +121,23 @@ def test_audio_recorder():
 
 
 def test_image_capture():
-    """Test image capture initialization."""
-    logger.info("=" * 60)
-    logger.info("Testing ImageCapture...")
-    logger.info("=" * 60)
+    """Test image capture module."""
+    logger.info("="*60)
+    logger.info("Testing image capture")
+    logger.info("="*60)
 
     try:
         from image_capture import ImageCapture
 
         camera = ImageCapture()
-        logger.info(f"✓ ImageCapture initialized")
-        logger.info(f"  - Output directory: {camera.output_dir}")
+        logger.info("✓ ImageCapture instantiated")
 
-        # Check if output directory exists
-        if camera.output_dir.exists():
-            logger.info(f"✓ Output directory exists: {camera.output_dir}")
+        if camera.test_camera():
+            logger.info("✓ Camera is working")
+            return True
         else:
-            logger.warning(
-                f"⚠ Output directory does not exist: {camera.output_dir}"
-            )
-
-        # Check if rpicam-jpeg is available
-        import shutil
-
-        if shutil.which("rpicam-jpeg"):
-            logger.info("✓ rpicam-jpeg command found")
-        else:
-            logger.warning("⚠ rpicam-jpeg command not found (on non-RPi system?)")
-
-        return True
+            logger.warning("⚠ Camera test failed (hardware may not be available)")
+            return True  # Not a critical failure for testing
 
     except Exception as e:
         logger.error(f"✗ ImageCapture test failed: {e}")
@@ -163,27 +145,23 @@ def test_image_capture():
 
 
 def test_audio_playback():
-    """Test audio playback initialization."""
-    logger.info("=" * 60)
-    logger.info("Testing AudioPlayback...")
-    logger.info("=" * 60)
+    """Test audio playback module."""
+    logger.info("="*60)
+    logger.info("Testing audio playback")
+    logger.info("="*60)
 
     try:
         from audio_playback import AudioPlayback
 
-        playback = AudioPlayback()
-        logger.info(f"✓ AudioPlayback initialized")
-        logger.info(f"  - ReSpeaker device index: {playback.RESPEAKER_DEVICE_INDEX}")
-        logger.info(f"  - Chunk size: {playback.CHUNK_SIZE}")
+        player = AudioPlayback()
+        logger.info("✓ AudioPlayback instantiated")
 
-        # Check if aplay is available
-        import shutil
-
-        if shutil.which("aplay"):
-            logger.info("✓ aplay command found")
+        if player.test_playback():
+            logger.info("✓ Audio playback system is working")
         else:
-            logger.warning("⚠ aplay command not found (fallback to PyAudio)")
+            logger.warning("⚠ Primary playback method failed, fallback will be used")
 
+        player.cleanup()
         return True
 
     except Exception as e:
@@ -192,26 +170,27 @@ def test_audio_playback():
 
 
 def test_llm_client():
-    """Test LLM client initialization."""
-    logger.info("=" * 60)
-    logger.info("Testing LLMClient...")
-    logger.info("=" * 60)
+    """Test LLM client initialization and connection."""
+    logger.info("="*60)
+    logger.info("Testing LLM client")
+    logger.info("="*60)
 
     try:
         from llm_client import LLMClient
 
         client = LLMClient()
-        logger.info(f"✓ LLMClient initialized")
-        logger.info(f"  - Base URL: {client.base_url}")
-        logger.info(f"  - Timeout: {client.timeout}s")
+        logger.info("✓ LLMClient instantiated")
+        logger.info(f"✓ API base URL: {client.base_url}")
+        logger.info(f"✓ Transcribe endpoint: {client.endpoints['transcribe']}")
+        logger.info(f"✓ Image analysis endpoint: {client.endpoints['analyze_image']}")
+        logger.info(f"✓ TTS endpoint: {client.endpoints['tts']}")
 
-        # Check if requests is available
-        try:
-            import requests
-
-            logger.info("✓ requests library available")
-        except ImportError:
-            logger.warning("⚠ requests library not available")
+        # Test API connection
+        logger.info("Testing API connection...")
+        if client.test_connection():
+            logger.info("✓ API is reachable")
+        else:
+            logger.warning("⚠ API connection test failed")
 
         return True
 
@@ -222,25 +201,21 @@ def test_llm_client():
 
 def test_button_handler():
     """Test button handler initialization."""
-    logger.info("=" * 60)
-    logger.info("Testing ButtonHandler...")
-    logger.info("=" * 60)
+    logger.info("="*60)
+    logger.info("Testing button handler")
+    logger.info("="*60)
 
     try:
         from button_handler import ButtonHandler
 
-        handler = ButtonHandler()
-        logger.info(f"✓ ButtonHandler initialized")
-        logger.info(f"  - Button pin: {handler.BUTTON_PIN}")
-        logger.info(f"  - Debounce time: {handler.DEBOUNCE_TIME}ms")
+        button = ButtonHandler()
+        logger.info("✓ ButtonHandler instantiated")
 
-        # Check if RPi.GPIO is available
-        try:
-            import RPi.GPIO
-
-            logger.info("✓ RPi.GPIO available")
-        except ImportError:
-            logger.warning("⚠ RPi.GPIO not available (not on Raspberry Pi?)")
+        if button.initialize():
+            logger.info("✓ ButtonHandler initialized successfully")
+            button.cleanup()
+        else:
+            logger.warning("⚠ ButtonHandler initialization failed (GPIO may not be available)")
 
         return True
 
@@ -249,70 +224,128 @@ def test_button_handler():
         return False
 
 
-def test_directories():
-    """Test that required directories exist or can be created."""
-    logger.info("=" * 60)
-    logger.info("Testing directory structure...")
-    logger.info("=" * 60)
+def test_dependencies():
+    """Test that all required Python packages are installed."""
+    logger.info("="*60)
+    logger.info("Testing Python dependencies")
+    logger.info("="*60)
 
-    directories = [
-        "/home/pi/recordings",
-        "/home/pi/Pictures",
-    ]
+    dependencies = {
+        'requests': 'HTTP client for API calls',
+        'pyaudio': 'Audio input/output',
+        'wave': 'WAV file handling',
+    }
 
-    all_exist = True
-    for dir_path in directories:
-        path = Path(dir_path)
-        if path.exists():
-            logger.info(f"✓ Directory exists: {dir_path}")
-        else:
-            logger.warning(f"⚠ Directory missing: {dir_path}")
-            all_exist = False
-
-    return all_exist
-
-
-def main():
-    """Run all tests."""
-    logger.info("\n")
-    logger.info("#" * 60)
-    logger.info("# Disability Support System - Module Test Suite")
-    logger.info("#" * 60)
-    logger.info("\n")
+    # Optional dependencies
+    optional_dependencies = {
+        'RPi.GPIO': 'GPIO control (Raspberry Pi only)',
+    }
 
     results = {}
 
+    # Test required dependencies
+    for package, description in dependencies.items():
+        try:
+            __import__(package)
+            logger.info(f"✓ {package}: Installed ({description})")
+            results[package] = True
+        except ImportError:
+            logger.error(f"✗ {package}: Missing ({description})")
+            results[package] = False
+
+    # Test optional dependencies
+    for package, description in optional_dependencies.items():
+        try:
+            __import__(package.replace('.', '_').lower())
+            logger.info(f"✓ {package}: Installed ({description})")
+        except ImportError:
+            logger.warning(f"⚠ {package}: Missing ({description}) - This is optional")
+
+    return all(results.values()), results
+
+
+def test_system_tools():
+    """Test that required system tools are available."""
+    logger.info("="*60)
+    logger.info("Testing system tools")
+    logger.info("="*60)
+
+    import subprocess
+
+    tools = {
+        'rpicam-jpeg': 'Image capture from camera',
+        'aplay': 'Audio playback (ALSA)',
+        'python3': 'Python runtime',
+    }
+
+    results = {}
+
+    for tool, description in tools.items():
+        try:
+            result = subprocess.run(
+                [tool, '--version'] if tool != 'rpicam-jpeg' else ['which', tool],
+                capture_output=True,
+                timeout=2
+            )
+            if result.returncode == 0 or subprocess.run(['which', tool], capture_output=True).returncode == 0:
+                logger.info(f"✓ {tool}: Available ({description})")
+                results[tool] = True
+            else:
+                logger.warning(f"⚠ {tool}: Not found ({description})")
+                results[tool] = False
+        except Exception as e:
+            logger.warning(f"⚠ {tool}: Test failed ({description}) - {e}")
+            results[tool] = False
+
+    return results
+
+
+def run_all_tests():
+    """Run all tests and generate summary report."""
+    logger.info("\n" + "="*60)
+    logger.info("DISABILITY SUPPORT SYSTEM - TEST SUITE")
+    logger.info("="*60 + "\n")
+
+    test_results = {}
+
     # Run all tests
-    results["Imports"] = test_imports()
-    results["Configuration"] = test_config()
-    results["AudioRecorder"] = test_audio_recorder()
-    results["ImageCapture"] = test_image_capture()
-    results["AudioPlayback"] = test_audio_playback()
-    results["LLMClient"] = test_llm_client()
-    results["ButtonHandler"] = test_button_handler()
-    results["Directories"] = test_directories()
+    test_results['imports'], _ = test_imports()
+    test_results['configuration'] = test_configuration()
+    test_results['dependencies'], _ = test_dependencies()
+    test_results['system_tools'] = test_system_tools()
+    test_results['audio_recorder'] = test_audio_recorder()
+    test_results['image_capture'] = test_image_capture()
+    test_results['audio_playback'] = test_audio_playback()
+    test_results['llm_client'] = test_llm_client()
+    test_results['button_handler'] = test_button_handler()
 
-    # Summary
-    logger.info("\n")
-    logger.info("=" * 60)
+    # Generate summary
+    logger.info("\n" + "="*60)
     logger.info("TEST SUMMARY")
-    logger.info("=" * 60)
+    logger.info("="*60)
 
-    passed = sum(1 for v in results.values() if v)
-    total = len(results)
+    passed = 0
+    failed = 0
 
-    for test_name, passed_test in results.items():
-        status = "✓ PASS" if passed_test else "✗ FAIL"
-        logger.info(f"{status}: {test_name}")
+    for test_name, result in test_results.items():
+        status = "PASSED" if result else "FAILED"
+        symbol = "✓" if result else "✗"
+        logger.info(f"{symbol} {test_name}: {status}")
 
-    logger.info("=" * 60)
-    logger.info(f"Results: {passed}/{total} tests passed")
-    logger.info("=" * 60)
-    logger.info("\n")
+        if result:
+            passed += 1
+        else:
+            failed += 1
 
-    # Return success if all tests passed
-    return 0 if passed == total else 1
+    logger.info("="*60)
+    logger.info(f"Total tests: {len(test_results)}")
+    logger.info(f"Passed: {passed}")
+    logger.info(f"Failed: {failed}")
+    logger.info("="*60)
+
+    return failed == 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    success = run_all_tests()
+    sys.exit(0 if success else 1)

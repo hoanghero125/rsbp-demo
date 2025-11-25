@@ -1,9 +1,3 @@
-# Claude files
-.claude/
-*.claude
-claude.json
-.claude.json
-
 # Python
 __pycache__/
 *.py[cod]
@@ -26,10 +20,31 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+# Virtual Environment
 venv/
-ENV/
 env/
+ENV/
+
+# Environment variables
+.env
+
+# Audio files
+audio/*.wav
+audio/*.mp3
+
+# Image files
+images/*.jpg
+images/*.jpeg
+images/*.png
+
+# Keep directory structure but ignore contents
+!audio/.gitkeep
+!images/.gitkeep
+!logs/.gitkeep
+
+# Logs
+logs/*.log
+*.log
 
 # IDE
 .vscode/
@@ -37,28 +52,11 @@ env/
 *.swp
 *.swo
 *~
+
+# OS
 .DS_Store
+Thumbs.db
 
-# Logs
-*.log
-/var/log/rsbp_system.log
-
-# Audio/Image files (ignore temporary test files)
-/tmp/*.wav
-/tmp/*.jpg
-
-# System files
-*.service.bak
-*.py.bak
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-*.prof
-
-# Local configuration overrides
-local_config.py
-secrets.py
-.env
-.env.local
+# Test files
+test_*.jpg
+test_*.wav

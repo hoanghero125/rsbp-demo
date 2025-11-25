@@ -1,126 +1,105 @@
 #!/bin/bash
-# Installation script for Disability Support System
-# Run this script with: sudo bash install.sh
 
-set -e
+# Disability Support System - Installation Script
+# This script automates the installation and setup process on Raspberry Pi
 
-echo "=================================================="
-echo "Disability Support System - Installation Script"
-echo "=================================================="
+set -e  # Exit on error
+
+echo "=========================================="
+echo "Disability Support System - Installation"
+echo "=========================================="
 echo ""
 
+# Check if running on Raspberry Pi
+if [ ! -f /proc/device-tree/model ] || ! grep -q "Raspberry Pi" /proc/device-tree/model 2>/dev/null; then
+    echo "Warning: This script is designed for Raspberry Pi"
+    read -p "Continue anyway? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
 # Check if running as root
-if [[ $EUID -ne 0 ]]; then
-    echo "ERROR: This script must be run as root (use sudo)"
+if [ "$EUID" -eq 0 ]; then
+    echo "Error: Please do not run this script as root"
+    echo "Run as: ./install.sh"
     exit 1
 fi
 
-echo "Step 1: Update system packages..."
-apt-get update
-apt-get upgrade -y
+echo "Step 1: Updating system packages..."
+sudo apt update
 
 echo ""
-echo "Step 2: Install Python dependencies..."
-apt-get install -y python3 python3-pip python3-dev
+echo "Step 2: Installing system dependencies..."
+sudo apt install -y python3 python3-pip python3-venv
+sudo apt install -y alsa-utils portaudio19-dev
+sudo apt install -y rpicam-apps
 
 echo ""
-echo "Step 3: Install build tools and audio dependencies..."
-# IMPORTANT: These are required before building PyAudio
-apt-get install -y build-essential libatlas-base-dev libjack-jackd2-dev
-apt-get install -y alsa-utils pulseaudio portaudio19-dev
-apt-get install -y python3-pyaudio
-
-echo ""
-echo "Step 4: Install camera tools..."
-apt-get install -y libraspberrypi-bin libraspberrypi-dev libraspberrypi0
-apt-get install -y rpicam-apps
-
-echo ""
-echo "Step 5: Install Python system packages..."
-# IMPORTANT: Use apt-get for these to avoid externally-managed-environment errors
-# This avoids pip conflicts with system-managed Python
-apt-get install -y python3-rpi.gpio python3-requests
-
-echo ""
-echo "Step 6: Verify Python dependencies..."
-# Verify all required packages are available
-echo "Checking installed Python packages..."
-python3 -c "import RPi.GPIO; print('✓ RPi.GPIO')" 2>/dev/null || echo "⚠ Warning: RPi.GPIO not found"
-python3 -c "import requests; print('✓ requests')" 2>/dev/null || echo "⚠ Warning: requests not found"
-python3 -c "import pyaudio; print('✓ PyAudio')" 2>/dev/null || echo "⚠ Warning: PyAudio not found"
-
-echo ""
-echo "Step 7: Create recording directories inside rsbp-demo..."
-# Create directories inside the project folder
-mkdir -p /home/thuongvv/rsbp-demo/recordings
-mkdir -p /home/thuongvv/rsbp-demo/pictures
-mkdir -p /home/thuongvv/rsbp-demo/logs
-
-# Set proper permissions
-chmod 755 /home/thuongvv/rsbp-demo/recordings
-chmod 755 /home/thuongvv/rsbp-demo/pictures
-chmod 755 /home/thuongvv/rsbp-demo/logs
-echo "✓ Directories created in /home/thuongvv/rsbp-demo"
-
-echo ""
-echo "Step 8: Copy application files..."
-cp rsbp-system.service /etc/systemd/system/
-systemctl daemon-reload
-echo "✓ Service file installed"
-
-echo ""
-echo "Step 9: Install and configure ReSpeaker..."
-# IMPORTANT: ReSpeaker requires device tree overlay and kernel module
-# The official install script handles this
-if ! grep -q "seeed-2mic-voicecard" /boot/firmware/config.txt 2>/dev/null; then
-    echo "Installing ReSpeaker device tree and drivers..."
-    if [ -d /tmp/seeed-voicecard ]; then
-        rm -rf /tmp/seeed-voicecard
-    fi
-    git clone https://github.com/respeaker/seeed-voicecard.git /tmp/seeed-voicecard
-    cd /tmp/seeed-voicecard
-
-    # Run the official installation script
-    bash install.sh
-
-    cd - > /dev/null
-    echo "✓ ReSpeaker installation complete"
-    echo "⚠ REBOOT REQUIRED: Device tree changes need reboot to take effect"
+echo "Step 3: Creating Python virtual environment..."
+if [ -d "venv" ]; then
+    echo "Virtual environment already exists"
 else
-    echo "✓ ReSpeaker already configured"
+    python3 -m venv venv
+    echo "Virtual environment created"
 fi
 
 echo ""
-echo "Step 10: Enable system service..."
-systemctl enable rsbp-system.service
-echo "✓ Service enabled for autostart"
+echo "Step 4: Installing Python packages..."
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+deactivate
 
 echo ""
-echo "=================================================="
-echo "Installation Complete!"
-echo "=================================================="
+echo "Step 5: Setting up environment configuration..."
+if [ ! -f ".env" ]; then
+    cp .env.example .env
+    echo ".env file created from template"
+else
+    echo ".env file already exists"
+fi
+
+echo ""
+echo "Step 6: Ensuring directories exist..."
+mkdir -p audio images logs
+echo "Directories created"
+
+echo ""
+echo "Step 7: Setting permissions..."
+# Ensure user is in necessary groups
+sudo usermod -a -G audio,video,gpio $USER || true
+
+echo ""
+echo "Step 8: Testing installation..."
+source venv/bin/activate
+python3 test_modules.py
+TEST_RESULT=$?
+deactivate
+
+echo ""
+echo "=========================================="
+if [ $TEST_RESULT -eq 0 ]; then
+    echo "Installation completed successfully!"
+else
+    echo "Installation completed with warnings"
+    echo "Please check test output above"
+fi
+echo "=========================================="
 echo ""
 echo "Next steps:"
+echo "1. Review and edit .env if needed"
+echo "2. Ensure camera is enabled: sudo raspi-config"
+echo "3. Ensure hardware is connected:"
+echo "   - ReSpeaker HAT"
+echo "   - Camera Module"
+echo "   - Button on GPIO pin 17"
+echo "   - Speaker"
+echo "4. Run the system: python3 main.py"
+echo "   (Make sure to activate venv first: source venv/bin/activate)"
 echo ""
-echo "1. REBOOT THE SYSTEM (required for ReSpeaker device tree changes):"
-echo "   sudo reboot"
+echo "Optional: Set up as systemd service"
+echo "See README.md for instructions"
 echo ""
-echo "2. After reboot, verify audio devices:"
-echo "   arecord -l    # Check microphone"
-echo "   aplay -l      # Check speaker"
-echo ""
-echo "3. Test the system:"
-echo "   python3 test_modules.py"
-echo ""
-echo "4. Start the service:"
-echo "   sudo systemctl start rsbp-system"
-echo ""
-echo "5. Monitor logs:"
-echo "   journalctl -u rsbp-system -f"
-echo ""
-echo "6. Run directly without service:"
-echo "   python3 /home/pi/rsbp-demo/main.py"
-echo ""
-echo "To disable autostart:"
-echo "   sudo systemctl disable rsbp-system.service"
-echo ""
+echo "Note: You may need to logout and login again for group changes to take effect"

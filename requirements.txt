@@ -1,1 +1,23 @@
-requests==2.31.0
+# Disability Support System - Python Dependencies
+
+# HTTP client for API communication
+requests>=2.31.0
+
+# Audio input/output handling
+PyAudio>=0.2.13
+
+# GPIO control for Raspberry Pi
+RPi.GPIO>=0.7.1
+
+# No additional dependencies needed for:
+# - wave: Built-in Python module for WAV file handling
+# - subprocess: Built-in Python module for system commands
+# - threading: Built-in Python module for concurrent operations
+# - logging: Built-in Python module for logging
+# - pathlib: Built-in Python module for path handling
+# - datetime: Built-in Python module for timestamps
+# - json: Built-in Python module for JSON handling
+# - os: Built-in Python module for environment variables
+# - sys: Built-in Python module for system operations
+# - signal: Built-in Python module for signal handling
+# - time: Built-in Python module for time operations

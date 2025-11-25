@@ -1,114 +1,105 @@
 """
-Image capture module for Raspberry Pi Camera Module V3.
-
-Captures still images using rpicam-jpeg command-line tool.
+Image Capture module for the Disability Support System.
+Handles image capture from Raspberry Pi Camera Module V3 using rpicam-jpeg.
 """
 
-import logging
 import subprocess
+import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+
+import config
 
 logger = logging.getLogger(__name__)
 
 
 class ImageCapture:
-    """Handles image capture from Raspberry Pi camera."""
+    """
+    Handles image capture from Raspberry Pi Camera Module V3.
+    IMPORTANT: Uses rpicam-jpeg command-line tool as required by specification.
+    """
 
-    def __init__(self, output_dir: str = "/home/pi/Pictures"):
+    def __init__(self):
+        """Initialize the image capture module."""
+        self.tool = config.IMAGE_CONFIG["tool"]
+        self.quality = config.IMAGE_CONFIG["quality"]
+        self.timeout_ms = config.IMAGE_CONFIG["timeout_ms"]
+        self.last_capture = None
+
+        logger.info("ImageCapture initialized")
+
+    def capture_image(self, output_path=None):
         """
-        Initialize image capture.
+        Capture a still image from the camera using rpicam-jpeg.
 
         Args:
-            output_dir: Directory to save captured images
-        """
-        self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def capture_image(self) -> Optional[str]:
-        """
-        Capture a single image from the camera.
+            output_path: Optional custom output path. If None, generates timestamped filename.
 
         Returns:
-            Path to captured image, or None if failed
+            Path to captured image file if successful, None otherwise.
         """
-        # Generate timestamp for filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = self.output_dir / f"recording_{timestamp}.jpg"
-
         try:
-            logger.info(f"Capturing image to: {output_file}")
+            # Generate output filename if not provided
+            if output_path is None:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = config.FILE_PATTERNS["captured_image"].format(timestamp=timestamp)
+                output_path = config.IMAGE_DIR / filename
 
-            # Use rpicam-jpeg to capture still image
+            # Ensure output directory exists
+            output_path = Path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # IMPORTANT: Build rpicam-jpeg command with maximum resolution
             cmd = [
-                "rpicam-jpeg",
-                "--output",
-                str(output_file),
-                "--timeout",
-                "1000",  # 1 second timeout
-                "--nopreview",  # Don't show preview
+                self.tool,
+                "-o", str(output_path),
+                "--timeout", str(self.timeout_ms),
+                "--quality", str(self.quality),
+                "--nopreview",  # No preview window needed
             ]
 
+            logger.info(f"Capturing image: {output_path}")
+
+            # Execute rpicam-jpeg command
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=5  # 5 second timeout for the subprocess
             )
 
-            if result.returncode == 0:
-                logger.info(f"Image captured successfully: {output_file}")
-                return str(output_file)
+            # Check if capture was successful
+            if result.returncode == 0 and output_path.exists():
+                self.last_capture = str(output_path)
+                logger.info(f"Image captured successfully: {output_path}")
+                return str(output_path)
             else:
-                logger.error(f"rpicam-jpeg failed: {result.stderr}")
+                logger.error(f"Image capture failed: {result.stderr}")
                 return None
 
         except subprocess.TimeoutExpired:
-            logger.error("Image capture timeout")
+            logger.error("Image capture timed out")
             return None
         except FileNotFoundError:
-            logger.error("rpicam-jpeg not found. Is it installed?")
+            logger.error(f"rpicam-jpeg command not found. Ensure rpicam-apps is installed.")
             return None
         except Exception as e:
-            logger.error(f"Image capture error: {e}")
+            logger.error(f"Error capturing image: {e}")
             return None
 
-    def capture_image_with_options(
-        self,
-        width: int = 1920,
-        height: int = 1440,
-        quality: int = 90,
-    ) -> Optional[str]:
+    def test_camera(self):
         """
-        Capture image with custom options.
-
-        Args:
-            width: Image width in pixels
-            height: Image height in pixels
-            quality: JPEG quality (0-100)
-
-        Returns:
-            Path to captured image, or None if failed
+        Test if the camera is available and working.
+        Returns True if camera is accessible, False otherwise.
         """
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_file = self.output_dir / f"recording_{timestamp}.jpg"
-
         try:
-            logger.info(f"Capturing image: {width}x{height}, quality={quality}")
+            # Try to capture a test image
+            test_path = config.IMAGE_DIR / "test_capture.jpg"
 
             cmd = [
-                "rpicam-jpeg",
-                "--output",
-                str(output_file),
-                "--width",
-                str(width),
-                "--height",
-                str(height),
-                "--quality",
-                str(quality),
-                "--timeout",
-                "1000",
+                self.tool,
+                "-o", str(test_path),
+                "--timeout", "1000",
                 "--nopreview",
             ]
 
@@ -116,16 +107,28 @@ class ImageCapture:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=5
             )
 
+            # Clean up test image
+            if test_path.exists():
+                test_path.unlink()
+
             if result.returncode == 0:
-                logger.info(f"Image captured: {output_file}")
-                return str(output_file)
+                logger.info("Camera test successful")
+                return True
             else:
-                logger.error(f"rpicam-jpeg failed: {result.stderr}")
-                return None
+                logger.warning(f"Camera test failed: {result.stderr}")
+                return False
 
         except Exception as e:
-            logger.error(f"Image capture error: {e}")
-            return None
+            logger.error(f"Camera test error: {e}")
+            return False
+
+    def get_last_capture(self):
+        """Return path to the last captured image."""
+        return self.last_capture
+
+    def cleanup(self):
+        """Cleanup method for consistency with other modules."""
+        logger.info("ImageCapture cleaned up")

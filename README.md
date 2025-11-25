@@ -1,394 +1,313 @@
 # Disability Support System
 
-A Raspberry Pi-based audio recording and image capture system that provides voice-based interaction support for users. The system processes audio questions and visual context through an LLM API to generate helpful responses.
+A voice and vision-based assistance system for Raspberry Pi that helps disabled individuals by processing audio questions and visual context through AI-powered APIs.
 
 ## System Overview
 
+This system provides an accessible interface for users to:
+1. Ask questions via voice input
+2. Capture visual context via camera
+3. Receive spoken responses combining both inputs
+
 ### Hardware Requirements
 
-- **Core Compute**: Raspberry Pi 3 Model B+ (or later)
-- **Audio Input**: ReSpeaker 2-Microphone Raspberry Pi HAT
-- **Audio Output**: Compact Mono Speaker (connected to ReSpeaker HAT)
-- **Vision Input**: Raspberry Pi Camera Module V3
-- **Input Control**: GPIO button on pin 17
+- Raspberry Pi 3 Model B+ (or newer)
+- ReSpeaker 2-Microphone Raspberry Pi HAT
+- Raspberry Pi Camera Module V3
+- Compact Mono Speaker (connected to ReSpeaker HAT)
+- GPIO Button (connected to GPIO pin 17)
 
-### Pipeline Architecture
+## System Pipeline
 
-```
-Button pressed
-    ↓
-[Recording starts] ← User asks question via microphone
-    ↓
-Button pressed
-    ↓
-[Recording ends] + [Capture image]
-    ↓
-[LLM Processing Pipeline]
-├─ STT: Transcribe audio to text
-├─ Image Analysis: Describe captured image
-└─ Generate Response: Combine question and image context
-    ↓
-[TTS]: Convert text response to speech
-    ↓
-[Audio Playback]: Play response through speaker
-```
-
-## Project Structure
-
-```
-rsbp-demo/
-├── main.py                 # Main application orchestrator
-├── audio_recorder.py       # Audio recording module (ReSpeaker)
-├── image_capture.py        # Image capture module (Pi Camera)
-├── audio_playback.py       # Audio playback module (Speaker)
-├── llm_client.py           # LLM API client (STT, image analysis, TTS)
-├── button_handler.py       # GPIO button input handler
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
-```
-
-## Module Documentation
-
-### audio_recorder.py
-Handles audio recording from the ReSpeaker 2-Microphone HAT.
-
-**Key Features:**
-- Records 16-bit PCM audio at 16kHz, 2 channels
-- Non-blocking recording using separate thread
-- Automatic WAV file generation with timestamps
-- Exception handling for audio stream errors
-
-**Usage:**
-```python
-from audio_recorder import AudioRecorder
-
-recorder = AudioRecorder()
-audio_file = recorder.start_recording()
-# ... perform other operations ...
-saved_file = recorder.stop_recording()
-```
-
-### image_capture.py
-Captures images using rpicam-jpeg command-line tool.
-
-**Key Features:**
-- Still image capture from Raspberry Pi Camera Module V3
-- Configurable resolution and JPEG quality
-- Automatic timestamped filename generation
-- Error handling for capture failures
-
-**Usage:**
-```python
-from image_capture import ImageCapture
-
-camera = ImageCapture()
-image_file = camera.capture_image()
-# Or with custom options
-image_file = camera.capture_image_with_options(width=1920, height=1440, quality=90)
-```
-
-### llm_client.py
-Client for interacting with the LLM API endpoints.
-
-**Key Features:**
-- Speech-to-Text (STT): `/audio/transcribe`
-- Image Analysis: `/image/analyze-image`
-- Text-to-Speech (TTS): `/tts/generate`
-- Error handling and request timeout management
-
-**API Endpoint:** `http://203.162.88.105/pvlm-api`
-
-**Usage:**
-```python
-from llm_client import LLMClient
-
-client = LLMClient()
-
-# Transcribe audio
-text = client.transcribe_audio("audio.wav")
-
-# Analyze image
-analysis = client.analyze_image("image.jpg", question="What is this?")
-
-# Generate speech
-audio_file = client.generate_tts("Hello world", "output.wav")
-```
-
-### audio_playback.py
-Handles audio playback through the connected speaker.
-
-**Key Features:**
-- Primary playback using ALSA `aplay` command
-- Fallback using PyAudio if aplay unavailable
-- Blocking and non-blocking playback modes
-- Thread-based async playback support
-
-**Usage:**
-```python
-from audio_playback import AudioPlayback
-
-speaker = AudioPlayback()
-speaker.play_audio_file("response.wav", blocking=True)
-```
-
-### button_handler.py
-Manages GPIO button input for recording control.
-
-**Key Features:**
-- GPIO event detection on pin 17
-- 500ms debounce time to prevent duplicate triggers
-- Callback-based event handling
-- Automatic GPIO cleanup
-
-**Usage:**
-```python
-from button_handler import ButtonHandler
-
-def on_button_press():
-    print("Button pressed!")
-
-handler = ButtonHandler(on_button_press=on_button_press)
-handler.initialize()
-```
-
-### main.py
-Main application orchestrator that coordinates all system components.
-
-**Key Responsibilities:**
-- System initialization and hardware setup
-- Button press event handling
-- Recording state management
-- LLM processing pipeline coordination
-- Error handling and graceful shutdown
-
-**State Machine:**
-- **Idle**: Waiting for button press
-- **Recording**: Capturing user's audio question
-- **Processing**: Running LLM pipeline (STT → Image Analysis → TTS)
-- **Playback**: Playing response to user
+1. **User presses button** - Recording starts
+2. **User speaks question** - Audio is captured
+3. **User presses button again** - Recording stops, image captured
+4. **System processes**:
+   - Audio transcribed to text (STT API)
+   - Image analyzed for context (Vision API)
+   - Response generated combining both inputs
+   - Response converted to speech (TTS API)
+5. **System plays response** - User hears the answer
 
 ## Installation
 
-### Prerequisites
+### 1. System Prerequisites
 
-1. **Raspberry Pi OS** with GPIO access
-2. **ReSpeaker 2-Microphone HAT** properly installed and configured
-3. **Raspberry Pi Camera Module V3** connected and enabled
-4. **rpicam-jpeg** command-line tool installed
+Ensure your Raspberry Pi has the following installed:
 
-### Setup Steps
-
-1. **Clone the repository:**
 ```bash
-git clone <repository-url>
-cd rsbp-demo
-```
+# Update system
+sudo apt update && sudo apt upgrade -y
 
-2. **Install Python dependencies:**
-```bash
-sudo pip install -r requirements.txt
-```
+# Install Python 3 and pip
+sudo apt install python3 python3-pip -y
 
-3. **Configure ReSpeaker (if not already done):**
-```bash
-sudo apt-get update
-sudo apt-get install git
-git clone https://github.com/respeaker/seeed-voicecard.git
-cd seeed-voicecard
-sudo ./install.sh
-sudo reboot
-```
+# Install audio tools
+sudo apt install alsa-utils portaudio19-dev -y
 
-4. **Enable Raspberry Pi Camera:**
-```bash
+# Install camera tools
+sudo apt install rpicam-apps -y
+
+# Enable camera interface
 sudo raspi-config
-# Navigate to Interface Options → Camera → Enable
-sudo reboot
+# Navigate to: Interface Options > Camera > Enable
 ```
 
-5. **Create recording directories:**
-```bash
-mkdir -p /home/pi/recordings
-mkdir -p /home/pi/Pictures
-```
-
-## Running the Application
-
-### Basic Startup
+### 2. Clone and Setup
 
 ```bash
-# Run with default configuration
-python main.py
+# Navigate to home directory
+cd /home/thuongvv
+
+# Clone or copy the project
+cd rsbp-demo
+
+# Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies
+pip3 install -r requirements.txt
 ```
 
-### With Logging
-
-The application logs to both console and `/var/log/rsbp_system.log`:
+### 3. Configuration
 
 ```bash
-# Monitor logs in real-time
-tail -f /var/log/rsbp_system.log
+# Copy environment template
+cp .env.example .env
+
+# Edit if needed (default API URL is already set)
+nano .env
 ```
 
-### Operational Instructions
+### 4. Test the System
 
-1. Press the GPIO button to start recording
-2. Speak your question clearly into the microphone
-3. Press the button again to stop recording
-4. System captures an image and processes with LLM
-5. Response is played back through the speaker
+```bash
+# Run comprehensive tests
+python3 test_modules.py
+```
 
-## API Integration
+This will verify:
+- All modules import correctly
+- Hardware components are accessible
+- API connectivity
+- Directory structure
 
-### LLM API Endpoints
+### 5. Test Hardware (Without API)
 
-All requests go to: `http://203.162.88.105/pvlm-api`
+Before testing with the API, verify all hardware is working:
 
-#### STT (Speech-to-Text)
-- **Endpoint**: `/audio/transcribe`
-- **Method**: POST
-- **Input**: Audio file (WAV format)
-- **Output**: JSON with `text` field
+```bash
+# Activate virtual environment
+source venv/bin/activate
 
-#### Image Analysis
-- **Endpoint**: `/image/analyze-image`
-- **Method**: POST
-- **Input**: Image file + optional question
-- **Output**: JSON with analysis description
+# Run interactive hardware test
+python3 test_hardware.py
+```
 
-#### TTS (Text-to-Speech)
-- **Endpoint**: `/tts/generate`
-- **Method**: POST
-- **Input**: JSON with `text` field
-- **Output**: Binary audio data (WAV format)
+This interactive tool lets you test:
+- **Camera** - Capture test images
+- **Microphone** - Record audio clips
+- **Speaker** - Play back recorded audio
+- **Button** - Test GPIO button input
+- **Complete Workflow** - Test all components together
 
-## File Storage
+You can run individual tests or all tests at once. This is useful for:
+- Verifying hardware connections before API is ready
+- Debugging hardware issues
+- Testing after setup changes
 
-### Audio Recordings
-- **Path**: `/home/pi/recordings/`
-- **Naming**: `audio_YYYYMMDD_HHMMSS.wav`
-- **Format**: WAV, 16-bit PCM, 16kHz, 2 channels
+## Usage
 
-### Captured Images
-- **Path**: `/home/pi/Pictures/`
-- **Naming**: `recording_YYYYMMDD_HHMMSS.jpg`
-- **Format**: JPEG
+### Running the System
 
-### TTS Output
-- **Path**: `/tmp/`
-- **Naming**: `response_YYYYMMDD_HHMMSS.wav`
+```bash
+# Make sure you're in the project directory
+cd /home/thuongvv/rsbp-demo
 
-## Error Handling
+# Activate virtual environment (if using one)
+source venv/bin/activate
 
-The system implements comprehensive error handling:
+# Run the main program
+python3 main.py
+```
 
-- **Audio Recording Errors**: Logged and reported to user
-- **Image Capture Failures**: Graceful fallback with user notification
-- **API Timeouts**: 30-second timeout with error messages
-- **GPIO Errors**: Safe initialization checks
-- **File I/O Errors**: Exception handling and recovery
+### Using the System
 
-All errors are logged to the system log file for debugging.
+1. Wait for "System is ready" message
+2. Press the button to start recording
+3. Speak your question clearly
+4. Press the button again to stop recording and capture image
+5. Wait for the system to process (you'll see log messages)
+6. Listen to the spoken response
+7. Repeat from step 2 for next question
+
+### Stopping the System
+
+Press `Ctrl+C` to gracefully shutdown the system.
+
+## Module Structure
+
+- `config.py` - Centralized configuration and settings
+- `audio_recorder.py` - Audio input from ReSpeaker HAT
+- `image_capture.py` - Camera image capture using rpicam-jpeg
+- `llm_client.py` - API communication (STT, Vision, TTS)
+- `audio_playback.py` - Audio output via speaker
+- `button_handler.py` - GPIO button control
+- `main.py` - System orchestrator and main loop
+- `test_modules.py` - Comprehensive testing suite
+
+## API Endpoints
+
+The system communicates with a centralized LLM API:
+
+- **Base URL**: `http://203.162.88.105/pvlm-api`
+- **STT Endpoint**: `/audio/transcribe` - Converts audio to text
+- **Vision Endpoint**: `/image/analyze-image` - Analyzes images
+- **TTS Endpoint**: `/tts/generate` - Converts text to speech
 
 ## Troubleshooting
 
-### Audio Issues
+### Audio Recording Issues
 
-**ReSpeaker not detected:**
 ```bash
-# Check audio devices
-arecord -l
+# List audio devices
 aplay -l
-```
+arecord -l
 
-**Low audio quality:**
-- Check microphone alignment
-- Ensure proper ReSpeaker HAT connection
-- Adjust gain settings in ReSpeaker configuration
+# Test microphone
+arecord -D plughw:2,0 -f S16_LE -r 16000 test.wav -d 3
+aplay test.wav
+```
 
 ### Camera Issues
 
-**Camera not found:**
 ```bash
-# Enable camera interface
-sudo raspi-config
-# Enable camera in Interface Options
+# Test camera
+rpicam-jpeg -o test.jpg --timeout 1000
+
+# Check if camera is enabled
+vcgencmd get_camera
 ```
 
-**Image capture failures:**
-- Check camera ribbon cable connection
-- Verify rpicam-jpeg installation: `which rpicam-jpeg`
+### GPIO Issues
+
+```bash
+# Check GPIO access
+gpio readall
+
+# Ensure user is in gpio group
+sudo usermod -a -G gpio $USER
+```
 
 ### API Connection Issues
 
-**Cannot reach LLM API:**
 ```bash
-# Test connectivity
-curl http://203.162.88.105/pvlm-api/audio/transcribe
+# Test API connectivity
+curl http://203.162.88.105/pvlm-api
+
+# Check network connection
+ping 203.162.88.105
 ```
 
-**Timeout errors:**
-- Check network connectivity
-- Verify API endpoint availability
-- Check system log: `/var/log/rsbp_system.log`
+## Logs
 
-### GPIO Button Not Responding
+System logs are stored in `logs/system.log` and provide detailed information about:
+- Component initialization
+- Button press events
+- Recording status
+- API calls and responses
+- Errors and exceptions
 
-**Check button connection:**
+View logs in real-time:
 ```bash
-# Monitor GPIO input
-gpio readall
+tail -f logs/system.log
 ```
 
-**Test button manually:**
-```python
-import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-while True:
-    print(GPIO.input(17))
-```
+## Running as a Service
 
-## Performance Considerations
-
-- **Memory**: System runs comfortably on Pi 3B+ with ~150MB RAM usage
-- **Processing Time**: LLM API requests typically take 5-30 seconds
-- **Audio Quality**: 16kHz sample rate provides good balance between quality and bandwidth
-- **Storage**: Each recording varies; typical hour of audio ≈ 57MB WAV file
-
-## Security Considerations
-
-- Audio files and images stored locally on Raspberry Pi
-- API communication over HTTP (consider HTTPS in production)
-- GPIO access requires appropriate user permissions
-- Implement access controls for sensitive environments
-
-## Development and Debugging
-
-### Enable Debug Logging
-
-Edit `main.py` and change logging level:
-```python
-logging.basicConfig(level=logging.DEBUG)
-```
-
-### Test Individual Modules
+To run the system automatically on boot:
 
 ```bash
-# Test audio recording
-python -c "from audio_recorder import AudioRecorder; r = AudioRecorder(); print('AudioRecorder OK')"
-
-# Test image capture
-python -c "from image_capture import ImageCapture; c = ImageCapture(); print('ImageCapture OK')"
-
-# Test LLM client
-python -c "from llm_client import LLMClient; c = LLMClient(); print('LLMClient OK')"
+# Create systemd service file
+sudo nano /etc/systemd/system/disability-support.service
 ```
+
+Add the following content (adjust paths as needed):
+
+```ini
+[Unit]
+Description=Disability Support System
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=thuongvv
+WorkingDirectory=/home/thuongvv/rsbp-demo
+Environment="PATH=/home/thuongvv/rsbp-demo/venv/bin"
+ExecStart=/home/thuongvv/rsbp-demo/venv/bin/python3 /home/thuongvv/rsbp-demo/main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+
+```bash
+# Reload systemd
+sudo systemctl daemon-reload
+
+# Enable service to start on boot
+sudo systemctl enable disability-support.service
+
+# Start the service
+sudo systemctl start disability-support.service
+
+# Check status
+sudo systemctl status disability-support.service
+
+# View logs
+sudo journalctl -u disability-support.service -f
+```
+
+## Development
+
+### Adding New Features
+
+The modular design makes it easy to extend functionality:
+- Add new API endpoints in `llm_client.py`
+- Modify response generation in `main.py`
+- Adjust audio/image settings in `config.py`
+
+### Testing Changes
+
+Always run the test suite after making changes:
+
+```bash
+python3 test_modules.py
+```
+
+## Technical Specifications
+
+- **Audio**: 16kHz, Mono, 16-bit PCM WAV
+- **Button**: GPIO pin 17 (BCM), 500ms debounce
+- **Camera**: Max resolution JPEG, quality 100
+- **API Timeout**: 30 seconds
+- **Playback**: aplay (ALSA) primary, PyAudio fallback
 
 ## License
 
-This project is provided as-is for disability support assistance.
+This project is designed for educational and assistive purposes.
 
 ## Support
 
-For issues, questions, or improvements, please refer to the project repository.
+For issues or questions, check:
+1. System logs in `logs/system.log`
+2. Test output from `test_modules.py`
+3. Hardware connections and configuration
+
+## Credits
+
+Built for supporting disabled individuals with voice and vision-based AI assistance.

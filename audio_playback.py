@@ -1,168 +1,216 @@
 """
-Audio playback module for speaker output.
-
-Plays audio files through the connected speaker via ReSpeaker HAT.
+Audio Playback module for the Disability Support System.
+Handles audio output to speaker via ReSpeaker HAT using aplay (primary) or PyAudio (fallback).
 """
 
-import logging
 import subprocess
-import threading
+import logging
 from pathlib import Path
-from typing import Optional
+import wave
 
-try:
-    import pyaudio
-    import wave
-except ImportError:
-    pyaudio = None
-    wave = None
+import config
 
 logger = logging.getLogger(__name__)
 
 
 class AudioPlayback:
-    """Handles audio playback through speaker."""
-
-    # Audio configuration
-    RESPEAKER_DEVICE_INDEX = 2  # ReSpeaker output device index
-    CHUNK_SIZE = 1024
+    """
+    Handles audio playback through the ReSpeaker HAT speaker.
+    IMPORTANT: Uses aplay (ALSA) as primary method, PyAudio as fallback.
+    """
 
     def __init__(self):
-        """Initialize audio playback handler."""
-        self.is_playing = False
-        self.thread = None
+        """Initialize the audio playback module."""
+        self.primary_tool = config.PLAYBACK_CONFIG["tool"]
+        self.fallback_tool = config.PLAYBACK_CONFIG["fallback"]
+        self.use_fallback = False
 
-    def play_audio_file(self, audio_file: str, blocking: bool = True) -> bool:
+        logger.info("AudioPlayback initialized")
+
+    def play_audio(self, audio_file_path, blocking=True):
         """
-        Play audio file through speaker.
+        Play audio file through the speaker.
 
         Args:
-            audio_file: Path to audio file to play
-            blocking: If True, wait for playback to complete
+            audio_file_path: Path to WAV audio file to play
+            blocking: If True, wait for playback to complete. If False, play in background.
 
         Returns:
             True if playback started successfully, False otherwise
         """
-        audio_path = Path(audio_file)
+        audio_path = Path(audio_file_path)
+
         if not audio_path.exists():
-            logger.error(f"Audio file not found: {audio_file}")
+            logger.error(f"Audio file not found: {audio_file_path}")
             return False
 
-        if self.is_playing:
-            logger.warning("Audio already playing, queueing next playback")
-
-        logger.info(f"Playing audio: {audio_file}")
-
-        if blocking:
-            return self._play_audio_direct(audio_file)
-        else:
-            self.thread = threading.Thread(
-                target=self._play_audio_direct, args=(audio_file,), daemon=True
-            )
-            self.thread.start()
-            return True
-
-    def _play_audio_direct(self, audio_file: str) -> bool:
-        """
-        Internal method to play audio file directly.
-
-        Args:
-            audio_file: Path to audio file
-
-        Returns:
-            True if playback succeeded, False otherwise
-        """
-        try:
-            self.is_playing = True
-
-            # Try using aplay (standard ALSA player)
-            result = subprocess.run(
-                ["aplay", "-D", "default", audio_file],
-                capture_output=True,
-                timeout=60,
-            )
-
-            if result.returncode == 0:
-                logger.info(f"Audio playback completed: {audio_file}")
+        # Try primary method (aplay) first
+        if not self.use_fallback:
+            success = self._play_with_aplay(audio_path, blocking)
+            if success:
                 return True
             else:
-                logger.error(f"aplay failed: {result.stderr.decode()}")
-                # Try fallback method
-                return self._play_audio_pyaudio(audio_file)
+                logger.warning("aplay failed, trying fallback method")
+                self.use_fallback = True
+
+        # Fallback to PyAudio
+        return self._play_with_pyaudio(audio_path, blocking)
+
+    def _play_with_aplay(self, audio_path, blocking=True):
+        """
+        Play audio using aplay (ALSA) command-line tool.
+        IMPORTANT: Primary playback method as specified.
+
+        Args:
+            audio_path: Path to audio file
+            blocking: Whether to wait for completion
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # IMPORTANT: Build aplay command
+            cmd = [self.primary_tool, str(audio_path)]
+
+            logger.info(f"Playing audio with aplay: {audio_path.name}")
+
+            if blocking:
+                # Wait for playback to complete
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=60  # 60 second timeout
+                )
+
+                if result.returncode == 0:
+                    logger.info("Audio playback completed successfully")
+                    return True
+                else:
+                    logger.error(f"aplay failed: {result.stderr}")
+                    return False
+            else:
+                # Non-blocking: start playback in background
+                subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                logger.info("Audio playback started (non-blocking)")
+                return True
 
         except FileNotFoundError:
-            logger.warning("aplay not found, trying PyAudio")
-            return self._play_audio_pyaudio(audio_file)
+            logger.error("aplay command not found")
+            return False
         except subprocess.TimeoutExpired:
-            logger.error("Audio playback timeout")
+            logger.error("Audio playback timed out")
             return False
         except Exception as e:
-            logger.error(f"Audio playback error: {e}")
+            logger.error(f"Error playing audio with aplay: {e}")
             return False
-        finally:
-            self.is_playing = False
 
-    def _play_audio_pyaudio(self, audio_file: str) -> bool:
+    def _play_with_pyaudio(self, audio_path, blocking=True):
         """
         Play audio using PyAudio (fallback method).
 
         Args:
-            audio_file: Path to audio file
+            audio_path: Path to audio file
+            blocking: Whether to wait for completion
 
         Returns:
-            True if playback succeeded, False otherwise
+            True if successful, False otherwise
         """
-        if not pyaudio or not wave:
-            logger.error("PyAudio not available for fallback playback")
-            return False
-
         try:
-            with wave.open(audio_file, "rb") as wav_file:
-                # Get audio parameters
-                n_channels = wav_file.getnchannels()
-                sample_width = wav_file.getsampwidth()
-                frame_rate = wav_file.getframerate()
+            import pyaudio
+            import threading
 
-                # Open output stream
-                audio = pyaudio.PyAudio()
-                stream = audio.open(
-                    format=audio.get_format_from_width(sample_width),
-                    channels=n_channels,
-                    rate=frame_rate,
-                    output=True,
-                    output_device_index=self.RESPEAKER_DEVICE_INDEX,
+            logger.info(f"Playing audio with PyAudio: {audio_path.name}")
+
+            # IMPORTANT: Open and read WAV file
+            with wave.open(str(audio_path), 'rb') as wf:
+                # Initialize PyAudio
+                p = pyaudio.PyAudio()
+
+                # Open stream
+                stream = p.open(
+                    format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True
                 )
 
-                # Play audio in chunks
-                data = wav_file.readframes(self.CHUNK_SIZE)
+                # Read and play audio data
+                chunk_size = 1024
+                data = wf.readframes(chunk_size)
+
                 while data:
                     stream.write(data)
-                    data = wav_file.readframes(self.CHUNK_SIZE)
+                    data = wf.readframes(chunk_size)
 
                 # Clean up
                 stream.stop_stream()
                 stream.close()
-                audio.terminate()
+                p.terminate()
 
-                logger.info(f"Audio playback completed via PyAudio: {audio_file}")
+                logger.info("Audio playback completed with PyAudio")
                 return True
 
+        except ImportError:
+            logger.error("PyAudio not available")
+            return False
         except Exception as e:
-            logger.error(f"PyAudio playback error: {e}")
+            logger.error(f"Error playing audio with PyAudio: {e}")
             return False
 
-    def stop_playback(self) -> None:
-        """Stop current playback if in progress."""
-        # Note: Stopping subprocess playback is difficult without process handle
-        # This would need to be enhanced with process management
-        logger.info("Stop playback requested")
+    def test_playback(self):
+        """
+        Test if audio playback is working.
+        Creates a simple test tone and attempts to play it.
 
-    def wait_until_finished(self) -> None:
-        """Wait until current playback finishes (for threaded playback)."""
-        if self.thread and self.thread.is_alive():
-            self.thread.join()
-            logger.debug("Playback thread finished")
+        Returns:
+            True if playback system is working, False otherwise
+        """
+        try:
+            # Check if aplay is available
+            result = subprocess.run(
+                [self.primary_tool, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
 
-    def is_audio_playing(self) -> bool:
-        """Check if audio is currently playing."""
-        return self.is_playing
+            if result.returncode == 0:
+                logger.info("aplay is available and working")
+                return True
+            else:
+                logger.warning("aplay test failed")
+                return False
+
+        except FileNotFoundError:
+            logger.warning("aplay not found, will use PyAudio fallback")
+            self.use_fallback = True
+            return False
+        except Exception as e:
+            logger.error(f"Playback test error: {e}")
+            return False
+
+    def stop_playback(self):
+        """
+        Stop any currently playing audio.
+        Note: This is a best-effort method and may not work for all playback methods.
+        """
+        try:
+            # Try to kill any running aplay processes
+            subprocess.run(
+                ["pkill", "-9", "aplay"],
+                capture_output=True,
+                timeout=2
+            )
+            logger.info("Stopped playback")
+        except Exception as e:
+            logger.warning(f"Could not stop playback: {e}")
+
+    def cleanup(self):
+        """Cleanup method for consistency with other modules."""
+        self.stop_playback()
+        logger.info("AudioPlayback cleaned up")

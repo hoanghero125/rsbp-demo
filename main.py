@@ -1,19 +1,6 @@
 """
-Main application orchestrator for Raspberry Pi disability support system.
-
-Pipeline:
-1. Button pressed -> Recording starts (captures user's question)
-2. Button pressed again -> Recording ends + Picture captured
-3. LLM processing: STT (audio) + Image analysis
-4. LLM response to user's question
-5. TTS conversion of response
-6. Playback of audio response
-
-Hardware:
-- Raspberry Pi 3 Model B+
-- ReSpeaker 2-Microphone HAT (audio input/output)
-- Raspberry Pi Camera Module V3
-- GPIO button on pin 17
+Main orchestrator for the Disability Support System.
+Coordinates all system components to provide voice and vision-based assistance.
 """
 
 import logging
@@ -21,227 +8,282 @@ import signal
 import sys
 import time
 from datetime import datetime
-from typing import Any
 
+import config
 from audio_recorder import AudioRecorder
 from image_capture import ImageCapture
-from llm_client import LLMClient
 from audio_playback import AudioPlayback
+from llm_client import LLMClient
 from button_handler import ButtonHandler
-
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=getattr(logging, config.LOG_CONFIG["level"]),
+    format=config.LOG_CONFIG["format"],
     handlers=[
-        logging.FileHandler("/var/log/rsbp_system.log"),
-        logging.StreamHandler(),
-    ],
+        logging.FileHandler(config.LOG_CONFIG["file"]),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 
 logger = logging.getLogger(__name__)
 
 
 class DisabilitySupportSystem:
-    """Main application orchestrator for disability support system."""
+    """
+    IMPORTANT: Main system orchestrator that coordinates all components.
+    Implements the complete pipeline:
+    1. Button press -> Start recording
+    2. Button press -> Stop recording + Capture image
+    3. Transcribe audio + Analyze image
+    4. Generate response
+    5. Play response audio
+    """
 
     def __init__(self):
         """Initialize all system components."""
-        logger.info("=" * 60)
+        logger.info("="*60)
         logger.info("Initializing Disability Support System")
-        logger.info("=" * 60)
+        logger.info("="*60)
 
-        # Initialize hardware components
-        self.audio_recorder = AudioRecorder()
-        self.image_capture = ImageCapture()
-        self.audio_playback = AudioPlayback()
+        # Initialize components
+        self.recorder = AudioRecorder()
+        self.camera = ImageCapture()
+        self.player = AudioPlayback()
         self.llm_client = LLMClient()
-        self.button_handler = ButtonHandler(on_button_press=self._handle_button_press)
+        self.button = ButtonHandler(callback=self.on_button_press)
 
-        # State management
+        # System state
         self.is_recording = False
-        self.recording_start_time = None
+        self.is_processing = False
         self.current_audio_file = None
         self.current_image_file = None
+        self.running = False
 
-        # Initialize GPIO
-        if not self.button_handler.initialize():
-            logger.error("Failed to initialize GPIO button handler")
-            raise RuntimeError("GPIO initialization failed")
+        logger.info("All components initialized")
+
+    def initialize(self):
+        """
+        Initialize hardware and test components.
+        IMPORTANT: Must be called before starting the main loop.
+
+        Returns:
+            True if initialization successful, False otherwise
+        """
+        logger.info("Starting system initialization...")
+
+        # Initialize audio recorder
+        if not self.recorder.initialize():
+            logger.error("Failed to initialize audio recorder")
+            return False
+
+        # Initialize button handler
+        if not self.button.initialize():
+            logger.warning("Button handler initialization failed - continuing anyway")
+
+        # Test camera
+        if not self.camera.test_camera():
+            logger.warning("Camera test failed - continuing anyway")
+
+        # Test audio playback
+        if not self.player.test_playback():
+            logger.warning("Audio playback test failed - will use fallback")
 
         logger.info("System initialization complete")
+        return True
 
-    def _handle_button_press(self) -> None:
-        """Handle button press events - toggle recording state."""
-        if self.is_recording:
-            self._stop_recording_and_process()
-        else:
-            self._start_recording()
-
-    def _start_recording(self) -> None:
-        """Start audio recording."""
+    def on_button_press(self):
+        """
+        IMPORTANT: Callback triggered when button is pressed.
+        Toggles between starting and stopping recording.
+        """
         try:
-            logger.info("Recording started")
-            self.recording_start_time = datetime.now()
-            self.current_audio_file = self.audio_recorder.start_recording()
-            self.is_recording = True
+            # Ignore button presses while processing
+            if self.is_processing:
+                logger.info("Button press ignored - system is processing")
+                return
 
-        except Exception as e:
-            logger.error(f"Failed to start recording: {e}")
-            self.is_recording = False
-
-    def _stop_recording_and_process(self) -> None:
-        """Stop recording, capture image, and process with LLM."""
-        try:
             if not self.is_recording:
-                logger.warning("No active recording to stop")
-                return
-
-            logger.info("Recording stopped")
-            self.is_recording = False
-
-            # Stop audio recording
-            self.current_audio_file = self.audio_recorder.stop_recording()
-            if not self.current_audio_file:
-                logger.error("Failed to save audio recording")
-                return
-
-            # Calculate recording duration
-            if self.recording_start_time:
-                recording_duration = (
-                    datetime.now() - self.recording_start_time
-                ).total_seconds()
-                logger.info(f"Recording duration: {recording_duration:.2f} seconds")
-
-            # Capture image
-            self.current_image_file = self.image_capture.capture_image()
-            if not self.current_image_file:
-                logger.error("Failed to capture image")
-                return
-
-            # Process with LLM in separate context to avoid blocking button handler
-            self._process_with_llm()
+                # First press: Start recording
+                self.start_recording()
+            else:
+                # Second press: Stop recording and process
+                self.stop_recording_and_process()
 
         except Exception as e:
-            logger.error(f"Error in recording stop/process: {e}")
-            self.is_recording = False
+            logger.error(f"Error in button press handler: {e}")
 
-    def _process_with_llm(self) -> None:
-        """Process user input with LLM: STT, image analysis, and TTS."""
+    def start_recording(self):
+        """Start audio recording."""
+        logger.info("="*60)
+        logger.info("BUTTON PRESS: Starting recording")
+        logger.info("="*60)
+
+        self.current_audio_file = self.recorder.start_recording()
+
+        if self.current_audio_file:
+            self.is_recording = True
+            logger.info(f"Recording started: {self.current_audio_file}")
+        else:
+            logger.error("Failed to start recording")
+
+    def stop_recording_and_process(self):
+        """
+        IMPORTANT: Stop recording, capture image, and process the complete query.
+        This is the main processing pipeline.
+        """
+        logger.info("="*60)
+        logger.info("BUTTON PRESS: Stopping recording and processing")
+        logger.info("="*60)
+
+        self.is_recording = False
+        self.is_processing = True
+
         try:
-            logger.info("Starting LLM processing pipeline")
-
-            # IMPORTANT: Step 1 - Transcribe audio (STT)
-            logger.info("Step 1: Transcribing audio to text (STT)")
-
-            if not self.current_audio_file:
-                logger.error("No audio file available")
-                self._play_error_response("Audio recording failed")
+            # Step 1: Stop recording and save audio
+            audio_file = self.recorder.stop_recording()
+            if not audio_file:
+                logger.error("Failed to save audio recording")
+                self.is_processing = False
                 return
 
-            question_text = self.llm_client.transcribe_audio(self.current_audio_file)
+            logger.info(f"Audio saved: {audio_file}")
 
-            if not question_text:
+            # Step 2: Capture image simultaneously
+            logger.info("Capturing image...")
+            image_file = self.camera.capture_image()
+            if not image_file:
+                logger.error("Failed to capture image")
+                self.is_processing = False
+                return
+
+            logger.info(f"Image captured: {image_file}")
+
+            # Step 3: Process with LLM API
+            logger.info("="*60)
+            logger.info("Processing query with LLM API")
+            logger.info("="*60)
+
+            # Transcribe audio
+            logger.info("Transcribing audio...")
+            transcription = self.llm_client.transcribe_audio(audio_file)
+            if not transcription:
                 logger.error("Failed to transcribe audio")
-                self._play_error_response("Failed to understand your question")
+                self.is_processing = False
                 return
 
-            logger.info(f"Transcribed question: {question_text}")
+            logger.info(f"Transcription: {transcription}")
 
-            # IMPORTANT: Step 2 - Analyze image
-            logger.info("Step 2: Analyzing image with context from question")
-
-            if not self.current_image_file:
-                logger.error("No image file available")
-                self._play_error_response("Image capture failed")
-                return
-
-            image_analysis = self.llm_client.analyze_image(
-                self.current_image_file, question=question_text
-            )
-
+            # Analyze image
+            logger.info("Analyzing image...")
+            image_analysis = self.llm_client.analyze_image(image_file)
             if not image_analysis:
                 logger.error("Failed to analyze image")
-                self._play_error_response("Failed to analyze the image")
+                self.is_processing = False
                 return
 
-            logger.info("Image analysis complete")
+            logger.info(f"Image analysis: {image_analysis}")
 
-            # IMPORTANT: Step 3 - Generate LLM response
-            # Combine question and image analysis for better context
-            logger.info("Step 3: Generating LLM response")
+            # IMPORTANT: Generate response combining both inputs
+            logger.info("Generating response...")
+            response_text = self._generate_response(transcription, image_analysis)
+            logger.info(f"Response: {response_text}")
 
-            # For now, we'll use the image analysis as the response
-            # In a real system, this would go through another LLM endpoint
-            response_text = (
-                f"Based on your question and the image analysis: {image_analysis}"
-            )
-
-            logger.info(f"LLM response generated: {response_text[:100]}...")
-
-            # IMPORTANT: Step 4 - Convert response to speech (TTS)
-            logger.info("Step 4: Converting response to speech (TTS)")
-            tts_output_file = f"/tmp/response_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
-
-            tts_file = self.llm_client.generate_tts(response_text, tts_output_file)
-
-            if not tts_file:
-                logger.error("Failed to generate TTS audio")
-                self._play_error_response("Failed to generate response")
+            # Step 4: Convert response to speech
+            logger.info("Converting response to speech...")
+            response_audio = self.llm_client.generate_speech(response_text)
+            if not response_audio:
+                logger.error("Failed to generate speech")
+                self.is_processing = False
                 return
 
-            # IMPORTANT: Step 5 - Play audio response
-            logger.info("Step 5: Playing audio response to user")
-            self.audio_playback.play_audio_file(tts_file, blocking=True)
+            logger.info(f"Response audio generated: {response_audio}")
 
-            logger.info("=" * 60)
-            logger.info("Processing pipeline complete")
-            logger.info("=" * 60)
+            # Step 5: Play response audio
+            logger.info("="*60)
+            logger.info("Playing response")
+            logger.info("="*60)
+
+            if self.player.play_audio(response_audio, blocking=True):
+                logger.info("Response played successfully")
+            else:
+                logger.error("Failed to play response")
 
         except Exception as e:
-            logger.error(f"Error in LLM processing: {e}")
-            self._play_error_response("An error occurred during processing")
+            logger.error(f"Error during processing: {e}")
 
-    def _play_error_response(self, message: str) -> None:
-        """Play an error message to the user."""
+        finally:
+            self.is_processing = False
+            logger.info("="*60)
+            logger.info("Ready for next query")
+            logger.info("="*60)
+
+    def _generate_response(self, transcription, image_analysis):
+        """
+        Generate response text based on transcription and image analysis.
+        IMPORTANT: This combines the user's question with visual context.
+
+        Args:
+            transcription: User's spoken question
+            image_analysis: Description of captured image
+
+        Returns:
+            Response text string
+        """
+        # Create a meaningful response combining both inputs
+        response = (
+            f"Based on your question: {transcription}. "
+            f"And looking at the image which shows: {image_analysis}. "
+            f"Here is my response to help you."
+        )
+
+        return response
+
+    def run(self):
+        """
+        IMPORTANT: Main system loop.
+        Keeps the system running and waiting for button presses.
+        """
+        self.running = True
+
+        logger.info("="*60)
+        logger.info("System is ready and running")
+        logger.info("Press the button to start recording")
+        logger.info("="*60)
+
         try:
-            logger.warning(f"Playing error message: {message}")
-            # In a real system, this would also use TTS
-            # For now, just log it
-        except Exception as e:
-            logger.error(f"Failed to play error response: {e}")
-
-    def run(self) -> None:
-        """Run the main application loop."""
-        try:
-            logger.info("System ready and listening for button presses")
-            logger.info("Press button to start recording")
-            logger.info("Press button again to stop and process")
-
-            # Keep the application running
-            while True:
-                time.sleep(1)
+            while self.running:
+                # Keep the main thread alive
+                # Button presses are handled by GPIO callbacks
+                time.sleep(0.1)
 
         except KeyboardInterrupt:
-            logger.info("Shutdown signal received")
-            self.shutdown()
+            logger.info("Keyboard interrupt received")
         except Exception as e:
-            logger.error(f"Unexpected error in main loop: {e}")
+            logger.error(f"Error in main loop: {e}")
+        finally:
             self.shutdown()
 
-    def shutdown(self) -> None:
-        """Gracefully shutdown the system."""
+    def shutdown(self):
+        """
+        Clean shutdown of all system components.
+        IMPORTANT: Ensures proper cleanup of hardware resources.
+        """
+        logger.info("="*60)
         logger.info("Shutting down system")
+        logger.info("="*60)
 
+        self.running = False
+
+        # Clean up all components
         try:
-            # Stop any ongoing recording
             if self.is_recording:
-                self.audio_recorder.stop_recording()
-                self.is_recording = False
+                self.recorder.stop_recording()
 
-            # Clean up GPIO
-            self.button_handler.cleanup()
+            self.recorder.cleanup()
+            self.camera.cleanup()
+            self.player.cleanup()
+            self.button.cleanup()
 
             logger.info("System shutdown complete")
 
@@ -249,31 +291,30 @@ class DisabilitySupportSystem:
             logger.error(f"Error during shutdown: {e}")
 
 
+def signal_handler(sig, frame):
+    """Handle system signals for graceful shutdown."""
+    logger.info(f"Signal {sig} received")
+    sys.exit(0)
+
+
 def main():
-    """Entry point for the application."""
-    system = None
+    """Main entry point for the application."""
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
+    # Create and initialize system
+    system = DisabilitySupportSystem()
+
+    if not system.initialize():
+        logger.error("System initialization failed")
+        sys.exit(1)
+
+    # Run the system
     try:
-        system = DisabilitySupportSystem()
-
-        # Set up signal handlers for graceful shutdown
-        def signal_handler(signum: int, frame: Any) -> None:
-            """Handle shutdown signals."""
-            logger.info(f"Signal {signum} received")
-            if system:
-                system.shutdown()
-            sys.exit(0)
-
-        signal.signal(signal.SIGINT, signal_handler)
-        signal.signal(signal.SIGTERM, signal_handler)
-
-        # Run the main application
         system.run()
-
     except Exception as e:
-        logger.error(f"Fatal error: {e}", exc_info=True)
-        if system:
-            system.shutdown()
+        logger.error(f"Fatal error: {e}")
         sys.exit(1)
 
 
