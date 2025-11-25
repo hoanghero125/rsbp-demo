@@ -52,12 +52,8 @@ class ButtonHandler:
             return False
 
         try:
-            # Step 1: Clean up any existing GPIO state first
-            logger.debug("Cleaning up any existing GPIO state...")
-            self._cleanup_gpio_state()
-
-            # Step 2: Set GPIO mode to BCM (Broadcom SOC channel numbering)
-            # This might fail if another process already set a different mode
+            # Step 1: Set GPIO mode to BCM (Broadcom SOC channel numbering)
+            # This MUST be done before any cleanup operations
             try:
                 GPIO.setmode(GPIO.BCM)
                 logger.debug("GPIO mode set to BCM")
@@ -70,8 +66,12 @@ class ButtonHandler:
                     logger.error(f"GPIO is in wrong mode: {current_mode}. Need BCM mode.")
                     raise
 
-            # Step 3: Disable warnings about GPIO channels already in use
+            # Step 2: Disable warnings about GPIO channels already in use
             GPIO.setwarnings(False)
+
+            # Step 3: Clean up any existing GPIO state (AFTER mode is set)
+            logger.debug("Cleaning up any existing GPIO state...")
+            self._cleanup_gpio_state()
 
             # Step 4: Set up button pin as input with pull-up resistor
             # Pull-up means button press will pull pin LOW (falling edge)
@@ -79,13 +79,34 @@ class ButtonHandler:
             logger.debug(f"GPIO pin {self.pin} configured as INPUT with PULL-UP")
 
             # Step 5: Set up event detection for button press
-            GPIO.add_event_detect(
-                self.pin,
-                GPIO.FALLING,  # Trigger on falling edge (button press)
-                callback=self._button_callback,
-                bouncetime=self.debounce_ms
-            )
-            logger.debug(f"Event detection added on pin {self.pin}")
+            # If this fails, try cleaning up and retrying once
+            try:
+                GPIO.add_event_detect(
+                    self.pin,
+                    GPIO.FALLING,  # Trigger on falling edge (button press)
+                    callback=self._button_callback,
+                    bouncetime=self.debounce_ms
+                )
+                logger.debug(f"Event detection added on pin {self.pin}")
+            except RuntimeError as e:
+                if "Failed to add edge detection" in str(e):
+                    logger.warning("Event detection failed, cleaning up and retrying...")
+                    # Force cleanup and retry
+                    try:
+                        GPIO.remove_event_detect(self.pin)
+                    except:
+                        pass
+                    time.sleep(0.1)  # Small delay
+                    # Retry
+                    GPIO.add_event_detect(
+                        self.pin,
+                        GPIO.FALLING,
+                        callback=self._button_callback,
+                        bouncetime=self.debounce_ms
+                    )
+                    logger.debug(f"Event detection added on pin {self.pin} (retry successful)")
+                else:
+                    raise
 
             self.is_initialized = True
             logger.info(f"GPIO initialized successfully on pin {self.pin}")
