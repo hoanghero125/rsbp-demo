@@ -1,45 +1,22 @@
-============================================================
-2025-11-25 19:39:08,505 - INFO - TEST 4: GPIO Button
-2025-11-25 19:39:08,506 - INFO - ============================================================
-2025-11-25 19:39:08,592 - INFO - ButtonHandler initialized for GPIO pin 17
-2025-11-25 19:39:08,602 - INFO - GPIO initialized successfully on pin 17
-2025-11-25 19:39:08,603 - INFO - Please press the button on GPIO pin 17 within 10 seconds...
-2025-11-25 19:39:16,878 - INFO - Button pressed on GPIO 17
-2025-11-25 19:39:16,879 - INFO - Button press detected!
-2025-11-25 19:39:16,913 - INFO - SUCCESS: Button is working!
-2025-11-25 19:39:16,915 - INFO - GPIO cleaned up
-
-Enter choice (0-6): 5
-2025-11-25 19:40:14,965 - INFO - 
-============================================================
-2025-11-25 19:40:14,965 - INFO - TEST 5: Complete Workflow (Button + Record + Camera + Playback)
-2025-11-25 19:40:14,965 - INFO - ============================================================
-2025-11-25 19:40:14,968 - ERROR - FAILED: No module named 'pyaudio'
-
-Enter choice (0-6): ^C2025-11-25 19:40:25,640 - INFO - 
-Exiting...
-pi@raspberrypi:~/rsbp-demo $ source venv/bin/activate
-(venv) pi@raspberrypi:~/rsbp-demo $ python3 test_hardware.py 
-2025-11-25 19:40:37,778 - INFO - 
-============================================================
-2025-11-25 19:40:37,778 - INFO - DISABILITY SUPPORT SYSTEM - HARDWARE TEST
-2025-11-25 19:40:37,779 - INFO - ============================================================
-2025-11-25 19:40:37,779 - INFO - 
-Select a test to run:
-2025-11-25 19:40:37,779 - INFO - 1. Test Camera
-2025-11-25 19:40:37,779 - INFO - 2. Test Microphone (record 3 seconds)
-2025-11-25 19:40:37,779 - INFO - 3. Test Speaker (playback recorded audio)
-2025-11-25 19:40:37,779 - INFO - 4. Test Button
-2025-11-25 19:40:37,779 - INFO - 5. Test Complete Workflow
-2025-11-25 19:40:37,779 - INFO - 6. Run All Tests
-2025-11-25 19:40:37,779 - INFO - 0. Exit
-
 Enter choice (0-6): 4
-2025-11-25 19:40:40,036 - INFO - 
+2025-11-26 01:47:13,492 - INFO - 
 ============================================================
-2025-11-25 19:40:40,037 - INFO - TEST 4: GPIO Button
-2025-11-25 19:40:40,037 - INFO - ============================================================
-2025-11-25 19:40:40,048 - INFO - ButtonHandler initialized for GPIO pin 17
-2025-11-25 19:40:40,049 - ERROR - Failed to initialize GPIO: Failed to add edge detection
-2025-11-25 19:40:40,050 - WARNING - WARNING: Could not initialize GPIO (may not be on Raspberry Pi)
-2025-11-25 19:40:40,051 - INFO - GPIO test skipped
+2025-11-26 01:47:13,493 - INFO - TEST 4: GPIO Button
+2025-11-26 01:47:13,493 - INFO - ============================================================
+2025-11-26 01:47:13,493 - INFO - ButtonHandler created for GPIO pin 17
+2025-11-26 01:47:13,494 - ERROR - Failed to initialize GPIO: Failed to add edge detection
+2025-11-26 01:47:13,494 - ERROR - Full traceback:
+Traceback (most recent call last):
+  File "/home/pi/rsbp-demo/button_handler.py", line 82, in initialize
+    GPIO.add_event_detect(
+    ~~~~~~~~~~~~~~~~~~~~~^
+        self.pin,
+        ^^^^^^^^^
+    ...<2 lines>...
+        bouncetime=self.debounce_ms
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+RuntimeError: Failed to add edge detection
+2025-11-26 01:47:13,498 - WARNING - WARNING: Could not initialize GPIO (may not be on Raspberry Pi)
+2025-11-26 01:47:13,499 - INFO - GPIO test skipped
