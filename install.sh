@@ -35,14 +35,18 @@ echo "Step 2: Installing system dependencies..."
 sudo apt install -y python3 python3-pip python3-venv
 sudo apt install -y alsa-utils portaudio19-dev
 sudo apt install -y rpicam-apps
+# IMPORTANT: Install RPi.GPIO as system package for proper GPIO permissions
+sudo apt install -y python3-rpi.gpio
 
 echo ""
 echo "Step 3: Creating Python virtual environment..."
 if [ -d "venv" ]; then
     echo "Virtual environment already exists"
+    echo "Note: To recreate with system-site-packages, run: rm -rf venv && ./install.sh"
 else
-    python3 -m venv venv
-    echo "Virtual environment created"
+    # IMPORTANT: Use --system-site-packages to access system RPi.GPIO
+    python3 -m venv --system-site-packages venv
+    echo "Virtual environment created with system site packages access"
 fi
 
 echo ""
