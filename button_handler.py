@@ -1,6 +1,7 @@
 """
 Button Handler module for the Disability Support System.
-Handles GPIO button input for recording control using RPi.GPIO.
+Handles GPIO button input for recording control.
+Based on ReSpeaker 2-Mics Pi HAT official specifications.
 """
 
 import logging
@@ -21,7 +22,13 @@ except (ImportError, RuntimeError):
 class ButtonHandler:
     """
     Handles GPIO button input for controlling recording start/stop.
-    IMPORTANT: Button on GPIO pin 17 (BCM mode) with 500ms debounce.
+
+    ReSpeaker 2-Mics Pi HAT Button Specifications:
+    - GPIO Pin: 17 (BCM mode)
+    - Pull-up resistor: Yes (built-in to RPi)
+    - Active state: LOW (button pressed = GPIO reads 0)
+    - Idle state: HIGH (button not pressed = GPIO reads 1)
+    - Edge detection: FALLING (HIGH → LOW when button is pressed)
     """
 
     def __init__(self, callback=None):
@@ -41,8 +48,8 @@ class ButtonHandler:
 
     def initialize(self):
         """
-        Initialize GPIO and set up button event detection.
-        IMPORTANT: Must be called before button can be used.
+        Initialize GPIO and set up button.
+        Simple implementation based on ReSpeaker 2-Mics Pi HAT specifications.
 
         Returns:
             True if initialization successful, False otherwise
@@ -52,112 +59,91 @@ class ButtonHandler:
             return False
 
         try:
-            # Step 1: Set GPIO mode to BCM (Broadcom SOC channel numbering)
-            # This MUST be done before any cleanup operations
-            try:
+            # Set GPIO numbering mode to BCM (Broadcom chip-specific pin numbers)
+            current_mode = GPIO.getmode()
+            if current_mode is None:
                 GPIO.setmode(GPIO.BCM)
                 logger.debug("GPIO mode set to BCM")
-            except ValueError as e:
-                # Mode already set, check if it's BCM
-                current_mode = GPIO.getmode()
-                if current_mode == GPIO.BCM:
-                    logger.debug("GPIO already in BCM mode (OK)")
-                else:
-                    logger.error(f"GPIO is in wrong mode: {current_mode}. Need BCM mode.")
-                    raise
+            elif current_mode == GPIO.BCM:
+                logger.debug("GPIO already in BCM mode")
+            else:
+                logger.error(f"GPIO in incompatible mode: {current_mode}")
+                return False
 
-            # Step 2: Disable warnings about GPIO channels already in use
+            # Disable GPIO warnings
             GPIO.setwarnings(False)
 
-            # Step 3: Clean up any existing GPIO state (AFTER mode is set)
-            logger.debug("Cleaning up any existing GPIO state...")
-            self._cleanup_gpio_state()
-
-            # Step 4: Set up button pin as input with pull-up resistor
-            # Pull-up means button press will pull pin LOW (falling edge)
+            # Configure the button pin
+            # GPIO.IN = Input mode
+            # GPIO.PUD_UP = Pull-up resistor (pin reads HIGH when button not pressed)
             GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            logger.debug(f"GPIO pin {self.pin} configured as INPUT with PULL-UP")
+            logger.debug(f"GPIO pin {self.pin} configured: INPUT with PULL-UP")
 
-            # Step 5: Set up event detection for button press
-            # If this fails, try cleaning up and retrying once
+            # Add event detection for button press
+            # GPIO.FALLING = Detect when pin goes from HIGH to LOW (button pressed)
+            # bouncetime = Ignore additional triggers for this many milliseconds
+            GPIO.add_event_detect(
+                self.pin,
+                GPIO.FALLING,
+                callback=self._button_callback,
+                bouncetime=self.debounce_ms
+            )
+            logger.debug(f"Event detection added: FALLING edge, {self.debounce_ms}ms debounce")
+
+            self.is_initialized = True
+            logger.info(f"GPIO button initialized successfully on pin {self.pin}")
+            return True
+
+        except RuntimeError as e:
+            logger.error(f"GPIO RuntimeError: {e}")
+            logger.info("Attempting to clean up and retry...")
+
+            # Try to cleanup and retry once
             try:
+                GPIO.cleanup(self.pin)
+                time.sleep(0.2)
+
+                # Retry initialization
+                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
                 GPIO.add_event_detect(
                     self.pin,
-                    GPIO.FALLING,  # Trigger on falling edge (button press)
+                    GPIO.FALLING,
                     callback=self._button_callback,
                     bouncetime=self.debounce_ms
                 )
-                logger.debug(f"Event detection added on pin {self.pin}")
-            except RuntimeError as e:
-                if "Failed to add edge detection" in str(e):
-                    logger.warning("Event detection failed, cleaning up and retrying...")
-                    # Force cleanup and retry
-                    try:
-                        GPIO.remove_event_detect(self.pin)
-                    except:
-                        pass
-                    time.sleep(0.1)  # Small delay
-                    # Retry
-                    GPIO.add_event_detect(
-                        self.pin,
-                        GPIO.FALLING,
-                        callback=self._button_callback,
-                        bouncetime=self.debounce_ms
-                    )
-                    logger.debug(f"Event detection added on pin {self.pin} (retry successful)")
-                else:
-                    raise
 
-            self.is_initialized = True
-            logger.info(f"GPIO initialized successfully on pin {self.pin}")
-            return True
+                self.is_initialized = True
+                logger.info("GPIO button initialized successfully (retry)")
+                return True
+
+            except Exception as retry_error:
+                logger.error(f"Retry failed: {retry_error}")
+                return False
 
         except Exception as e:
             logger.error(f"Failed to initialize GPIO: {e}")
             logger.exception("Full traceback:")
             return False
 
-    def _cleanup_gpio_state(self):
-        """
-        Clean up any existing GPIO state on our pin.
-        This is called before initialization to ensure clean slate.
-        """
-        try:
-            # Try to remove any existing event detection on this pin
-            GPIO.remove_event_detect(self.pin)
-            logger.debug(f"Removed existing event detection on pin {self.pin}")
-        except Exception:
-            # No event detection was set, which is fine
-            pass
-
-        try:
-            # Clean up the specific pin
-            GPIO.cleanup(self.pin)
-            logger.debug(f"Cleaned up GPIO pin {self.pin}")
-        except Exception:
-            # Pin wasn't set up, which is fine
-            pass
-
     def _button_callback(self, channel):
         """
-        Internal callback triggered by GPIO event.
-        IMPORTANT: Handles debouncing and calls user-provided callback.
+        Internal callback triggered by GPIO event (FALLING edge).
+        Called automatically when button is pressed.
 
         Args:
             channel: GPIO channel number (provided by RPi.GPIO)
         """
         current_time = time.time()
 
-        # Additional software debouncing
+        # Additional software debouncing (in addition to hardware bouncetime)
         if current_time - self.last_press_time < (self.debounce_ms / 1000.0):
             logger.debug("Button press ignored (debounce)")
             return
 
         self.last_press_time = current_time
-
         logger.info(f"Button pressed on GPIO {channel}")
 
-        # Call user-provided callback if set
+        # Call user-provided callback
         if self.callback:
             try:
                 self.callback()
@@ -177,7 +163,8 @@ class ButtonHandler:
 
     def wait_for_press(self, timeout=None):
         """
-        Block and wait for a button press (for testing/debugging).
+        Block and wait for a button press.
+        Used for testing and synchronous button operations.
 
         Args:
             timeout: Optional timeout in seconds. None means wait forever.
@@ -190,17 +177,27 @@ class ButtonHandler:
             return False
 
         try:
-            logger.info("Waiting for button press...")
+            logger.info(f"Waiting for button press (timeout: {timeout}s)...")
             timeout_ms = int(timeout * 1000) if timeout else None
+
+            # Wait for FALLING edge (button press)
             result = GPIO.wait_for_edge(self.pin, GPIO.FALLING, timeout=timeout_ms)
-            return result is not None
+
+            if result is not None:
+                logger.info("Button press detected!")
+                return True
+            else:
+                logger.debug("Button wait timed out")
+                return False
+
         except Exception as e:
             logger.error(f"Error waiting for button press: {e}")
             return False
 
     def is_pressed(self):
         """
-        Check if button is currently pressed (for polling).
+        Check if button is currently pressed (polling mode).
+        Returns True if button is being held down right now.
 
         Returns:
             True if button is pressed, False otherwise
@@ -209,7 +206,7 @@ class ButtonHandler:
             return False
 
         try:
-            # Button is pressed when pin reads LOW (due to pull-up resistor)
+            # With pull-up resistor: GPIO.LOW (0) means button is pressed
             return GPIO.input(self.pin) == GPIO.LOW
         except Exception as e:
             logger.error(f"Error reading button state: {e}")
@@ -218,7 +215,7 @@ class ButtonHandler:
     def cleanup(self):
         """
         Clean up GPIO resources.
-        IMPORTANT: Should be called when shutting down the system.
+        Should be called when shutting down the system.
         """
         if not GPIO_AVAILABLE:
             return
@@ -226,26 +223,26 @@ class ButtonHandler:
         logger.info("Cleaning up button handler...")
 
         try:
-            # Remove event detection first
             if self.is_initialized:
+                # Remove event detection
                 try:
                     GPIO.remove_event_detect(self.pin)
                     logger.debug(f"Removed event detection on pin {self.pin}")
                 except Exception as e:
                     logger.debug(f"Could not remove event detection: {e}")
 
-            # Then cleanup the GPIO pin
-            try:
-                GPIO.cleanup(self.pin)
-                logger.debug(f"Cleaned up GPIO pin {self.pin}")
-            except Exception as e:
-                logger.debug(f"Could not cleanup GPIO pin: {e}")
+                # Cleanup the specific pin
+                try:
+                    GPIO.cleanup(self.pin)
+                    logger.debug(f"Cleaned up GPIO pin {self.pin}")
+                except Exception as e:
+                    logger.debug(f"Could not cleanup GPIO pin: {e}")
 
-            self.is_initialized = False
-            logger.info("GPIO cleaned up successfully")
+                self.is_initialized = False
+                logger.info("Button handler cleanup complete")
 
         except Exception as e:
-            logger.error(f"Error during GPIO cleanup: {e}")
+            logger.error(f"Error during cleanup: {e}")
 
     def test_button(self, timeout=5):
         """
