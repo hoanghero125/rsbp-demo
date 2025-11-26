@@ -4,42 +4,119 @@ Tài liệu này hướng dẫn cách cấu hình hệ thống tự động ch�
 
 ## 📋 Tổng Quan
 
-Sử dụng **systemd service** để:
+Sử dụng **systemd user service** để:
 - Tự động chạy `main.py` khi Pi khởi động
 - Tự động restart nếu chương trình bị lỗi
 - Quản lý dễ dàng (start/stop/restart)
 - Xem logs tập trung
+- **Có quyền truy cập audio** (quan trọng!)
 
-## 🚀 Cài Đặt Tự Động Khởi Động
+## ⚠️ QUAN TRỌNG: User Service vs System Service
 
-### Bước 1: Copy Service File
+**Khuyến nghị:** Dùng **User Service** để có quyền audio!
+
+| Feature | System Service | User Service ✅ |
+|---------|---------------|----------------|
+| Quyền audio | ❌ Không có | ✅ Có |
+| Lệnh quản lý | `sudo systemctl` | `systemctl --user` |
+| Thư mục | `/etc/systemd/system/` | `~/.config/systemd/user/` |
+
+**Nếu chạy system service, audio sẽ KHÔNG phát được!**
+
+---
+
+## 🚀 Cài Đặt User Service (Khuyến Nghị)
+
+### Bước 1: Tạo Thư Mục User Service
 
 ```bash
-# Copy service file vào systemd
-sudo cp disability-support.service /etc/systemd/system/
-
-# Reload systemd để nhận service mới
-sudo systemctl daemon-reload
+# Tạo thư mục
+mkdir -p ~/.config/systemd/user/
 ```
 
-### Bước 2: Enable Service (Tự động chạy khi boot)
+### Bước 2: Copy Service File
 
 ```bash
-# Enable service để chạy khi khởi động
-sudo systemctl enable disability-support.service
+# Copy service file vào user systemd directory
+cp ~/rsbp-demo/disability-support.service ~/.config/systemd/user/
+
+# Reload user systemd
+systemctl --user daemon-reload
+```
+
+### Bước 3: Enable User Service
+
+```bash
+# Enable service (tự động chạy khi login)
+systemctl --user enable disability-support.service
+
+# Start service ngay
+systemctl --user start disability-support.service
 
 # Kiểm tra status
-sudo systemctl status disability-support.service
+systemctl --user status disability-support.service
 ```
 
-### Bước 3: Start Service Ngay
+### Bước 4: Enable Linger (Chạy Trước Khi Login)
+
+**QUAN TRỌNG:** Linger cho phép service chạy ngay khi Pi boot, không cần đợi user login!
 
 ```bash
-# Khởi động service ngay lập tức (không cần reboot)
-sudo systemctl start disability-support.service
+# Enable linger cho user pi
+sudo loginctl enable-linger pi
 
-# Kiểm tra service đã chạy chưa
-sudo systemctl status disability-support.service
+# Kiểm tra
+loginctl show-user pi | grep Linger
+# Mong đợi: Linger=yes
+```
+
+### Bước 5: Test Reboot
+
+```bash
+# Reboot Pi
+sudo reboot
+```
+
+Sau khi boot:
+- Service tự động chạy
+- Audio hoạt động bình thường! ✅
+
+---
+
+## 🎛️ Quản Lý User Service
+
+### Các Lệnh Cơ Bản
+
+**Lưu ý:** Dùng `systemctl --user` (không có `sudo`!)
+
+```bash
+# Xem trạng thái
+systemctl --user status disability-support.service
+
+# Khởi động service
+systemctl --user start disability-support.service
+
+# Dừng service
+systemctl --user stop disability-support.service
+
+# Restart service
+systemctl --user restart disability-support.service
+
+# Disable auto-start
+systemctl --user disable disability-support.service
+```
+
+### Xem Logs
+
+```bash
+# Xem logs real-time
+journalctl --user -u disability-support.service -f
+
+# Xem 100 dòng cuối
+journalctl --user -u disability-support.service -n 100
+
+# Xem từ lần boot gần nhất
+journalctl --user -u disability-support.service -b
 ```
 
 ## 🎛️ Quản Lý Service
