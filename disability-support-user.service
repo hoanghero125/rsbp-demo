@@ -1,0 +1,19 @@
+[Unit]
+Description=Disability Support System
+After=network.target sound.target
+
+[Service]
+# IMPORTANT: Do NOT specify User= and Group= in user service!
+# User service automatically runs as the user who owns it.
+Type=simple
+WorkingDirectory=/home/pi/rsbp-demo
+Environment="PATH=/home/pi/rsbp-demo/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="API_KEY=http://203.162.88.105/pvlm-api"
+ExecStart=/home/pi/rsbp-demo/venv/bin/python3 /home/pi/rsbp-demo/main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
