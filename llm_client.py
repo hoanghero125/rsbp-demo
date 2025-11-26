@@ -187,12 +187,12 @@ class LLMClient:
             logger.info(f"Generating speech: {text[:100]}...")
 
             # IMPORTANT: Send text to TTS endpoint
-            # API might expect JSON with text field or form data
-            payload = {'text': text}
+            # API expects form data (not JSON)
+            data = {'text': text}
 
             response = requests.post(
                 self.endpoints["tts"],
-                json=payload,
+                data=data,  # Use form data, not JSON
                 timeout=self.timeout
             )
 
