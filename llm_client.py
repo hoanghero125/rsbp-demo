@@ -83,15 +83,21 @@ class LLMClient:
             logger.error(f"Error during transcription: {e}")
             return None
 
-    def analyze_image(self, image_file_path):
+    def analyze_image(self, image_file_path, prompt=None):
         """
-        Analyze image using Image Analysis API.
+        Analyze image using Vision-Language Model API.
+
+        IMPORTANT: This endpoint acts as a Vision-Language Model (VLM).
+        It takes both an image and a text prompt (user's question from STT)
+        and returns the final answer directly - not just image description.
 
         Args:
             image_file_path: Path to JPEG image file
+            prompt: Text prompt (user's question from speech transcription)
+                   This tells the VLM what question to answer about the image.
 
         Returns:
-            Image analysis/description string if successful, None otherwise
+            VLM response string (final answer) if successful, None otherwise
         """
         try:
             image_path = Path(image_file_path)
@@ -99,41 +105,57 @@ class LLMClient:
                 logger.error(f"Image file not found: {image_file_path}")
                 return None
 
-            # IMPORTANT: Prepare multipart file upload
+            # IMPORTANT: Prepare multipart form data with both image and prompt
             with open(image_path, 'rb') as image_file:
                 files = {'file': (image_path.name, image_file, 'image/jpeg')}
 
-                logger.info(f"Sending image for analysis: {image_path.name}")
+                # Add prompt as form data if provided
+                data = {}
+                if prompt:
+                    data['prompt'] = prompt
+                    logger.info(f"Sending image with prompt: {prompt[:100]}...")
+                else:
+                    logger.info(f"Sending image for analysis: {image_path.name}")
 
-                # Make POST request to image analysis endpoint
+                # Make POST request to VLM endpoint
+                # Sends both image file and text prompt
                 response = requests.post(
                     self.endpoints["analyze_image"],
                     files=files,
+                    data=data,
                     timeout=self.timeout
                 )
 
                 response.raise_for_status()
                 result = response.json()
 
-                # IMPORTANT: Extract image description from response
-                # Assuming API returns {"description": "image analysis"}
-                description = result.get('description', result.get('analysis', ''))
+                # IMPORTANT: Extract the VLM's response (final answer)
+                # Try multiple possible response keys
+                vlm_response = (
+                    result.get('response') or
+                    result.get('answer') or
+                    result.get('text') or
+                    result.get('description') or
+                    result.get('analysis') or
+                    ''
+                )
 
-                if description:
-                    logger.info(f"Image analysis successful: {description[:100]}...")
-                    return description
+                if vlm_response:
+                    logger.info(f"VLM response received: {vlm_response[:100]}...")
+                    return vlm_response
                 else:
-                    logger.warning("Image analysis returned empty result")
+                    logger.warning("VLM returned empty response")
+                    logger.debug(f"Full API response: {result}")
                     return None
 
         except requests.exceptions.Timeout:
-            logger.error("Image analysis request timed out")
+            logger.error("VLM request timed out")
             return None
         except requests.exceptions.RequestException as e:
-            logger.error(f"Image analysis request failed: {e}")
+            logger.error(f"VLM request failed: {e}")
             return None
         except Exception as e:
-            logger.error(f"Error during image analysis: {e}")
+            logger.error(f"Error during VLM processing: {e}")
             return None
 
     def generate_speech(self, text, output_path=None):

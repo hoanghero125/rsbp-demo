@@ -32,12 +32,13 @@ logger = logging.getLogger(__name__)
 class DisabilitySupportSystem:
     """
     IMPORTANT: Main system orchestrator that coordinates all components.
-    Implements the complete pipeline:
+    Implements the complete Vision-Language Model pipeline:
     1. Button press -> Start recording
     2. Button press -> Stop recording + Capture image
-    3. Transcribe audio + Analyze image
-    4. Generate response
-    5. Play response audio
+    3. Transcribe audio (STT) -> Get user's question
+    4. Send image + question to VLM -> Get final answer
+    5. Convert answer to speech (TTS)
+    6. Play response audio
     """
 
     def __init__(self):
@@ -130,7 +131,15 @@ class DisabilitySupportSystem:
     def stop_recording_and_process(self):
         """
         IMPORTANT: Stop recording, capture image, and process the complete query.
-        This is the main processing pipeline.
+        This is the main processing pipeline using Vision-Language Model.
+
+        Pipeline:
+        1. Stop recording and save audio
+        2. Capture image
+        3. Transcribe audio (STT) -> user's question
+        4. Send image + question to VLM -> get final answer
+        5. Convert answer to speech (TTS)
+        6. Play audio response
         """
         logger.info("="*60)
         logger.info("BUTTON PRESS: Stopping recording and processing")
@@ -149,7 +158,7 @@ class DisabilitySupportSystem:
 
             logger.info(f"Audio saved: {audio_file}")
 
-            # Step 2: Capture image simultaneously
+            # Step 2: Capture image
             logger.info("Capturing image...")
             image_file = self.camera.capture_image()
             if not image_file:
@@ -159,39 +168,38 @@ class DisabilitySupportSystem:
 
             logger.info(f"Image captured: {image_file}")
 
-            # Step 3: Process with LLM API
+            # Step 3: Transcribe audio to get user's question
             logger.info("="*60)
-            logger.info("Processing query with LLM API")
+            logger.info("Processing with Vision-Language Model")
             logger.info("="*60)
 
-            # Transcribe audio
-            logger.info("Transcribing audio...")
-            transcription = self.llm_client.transcribe_audio(audio_file)
-            if not transcription:
+            logger.info("Step 1: Transcribing audio (STT)...")
+            user_question = self.llm_client.transcribe_audio(audio_file)
+            if not user_question:
                 logger.error("Failed to transcribe audio")
                 self.is_processing = False
                 return
 
-            logger.info(f"Transcription: {transcription}")
+            logger.info(f"User question: {user_question}")
 
-            # Analyze image
-            logger.info("Analyzing image...")
-            image_analysis = self.llm_client.analyze_image(image_file)
-            if not image_analysis:
-                logger.error("Failed to analyze image")
+            # Step 4: Send image + question to VLM for final answer
+            # IMPORTANT: The VLM endpoint combines vision and language understanding
+            # It takes the image and the user's question, then generates the answer
+            logger.info("Step 2: Querying Vision-Language Model...")
+            logger.info(f"  Image: {image_file}")
+            logger.info(f"  Question: {user_question}")
+
+            final_answer = self.llm_client.analyze_image(image_file, prompt=user_question)
+            if not final_answer:
+                logger.error("Failed to get response from VLM")
                 self.is_processing = False
                 return
 
-            logger.info(f"Image analysis: {image_analysis}")
+            logger.info(f"VLM Answer: {final_answer}")
 
-            # IMPORTANT: Generate response combining both inputs
-            logger.info("Generating response...")
-            response_text = self._generate_response(transcription, image_analysis)
-            logger.info(f"Response: {response_text}")
-
-            # Step 4: Convert response to speech
-            logger.info("Converting response to speech...")
-            response_audio = self.llm_client.generate_speech(response_text)
+            # Step 5: Convert answer to speech (TTS)
+            logger.info("Step 3: Converting answer to speech (TTS)...")
+            response_audio = self.llm_client.generate_speech(final_answer)
             if not response_audio:
                 logger.error("Failed to generate speech")
                 self.is_processing = False
@@ -199,7 +207,7 @@ class DisabilitySupportSystem:
 
             logger.info(f"Response audio generated: {response_audio}")
 
-            # Step 5: Play response audio
+            # Step 6: Play response audio
             logger.info("="*60)
             logger.info("Playing response")
             logger.info("="*60)
@@ -218,26 +226,6 @@ class DisabilitySupportSystem:
             logger.info("Ready for next query")
             logger.info("="*60)
 
-    def _generate_response(self, transcription, image_analysis):
-        """
-        Generate response text based on transcription and image analysis.
-        IMPORTANT: This combines the user's question with visual context.
-
-        Args:
-            transcription: User's spoken question
-            image_analysis: Description of captured image
-
-        Returns:
-            Response text string
-        """
-        # Create a meaningful response combining both inputs
-        response = (
-            f"Based on your question: {transcription}. "
-            f"And looking at the image which shows: {image_analysis}. "
-            f"Here is my response to help you."
-        )
-
-        return response
 
     def run(self):
         """
