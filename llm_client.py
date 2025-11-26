@@ -130,8 +130,9 @@ class LLMClient:
                 result = response.json()
 
                 # IMPORTANT: Extract the VLM's response (final answer)
-                # Try multiple possible response keys
+                # API returns response in 'raw_text' key
                 vlm_response = (
+                    result.get('raw_text') or
                     result.get('response') or
                     result.get('answer') or
                     result.get('text') or
