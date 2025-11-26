@@ -4,11 +4,12 @@ After=network.target sound.target
 
 [Service]
 Type=simple
-User=thuongvv
-Group=thuongvv
-WorkingDirectory=/home/thuongvv/rsbp-demo
-Environment="PATH=/home/thuongvv/rsbp-demo/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/home/thuongvv/rsbp-demo/venv/bin/python3 /home/thuongvv/rsbp-demo/main.py
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/rsbp-demo
+Environment="PATH=/home/pi/rsbp-demo/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="API_KEY=http://203.162.88.105/pvlm-api"
+ExecStart=/home/pi/rsbp-demo/venv/bin/python3 /home/pi/rsbp-demo/main.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
