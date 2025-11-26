@@ -1,38 +1,42 @@
-(venv) pi@raspberrypi:~/rsbp-demo $ python3 test_vlm.py 
-
-VLM API Test Tool
-
-Using latest image: /home/pi/rsbp-demo/images/capture_20251126_192730.jpg
-Using default prompt: Tôi đang nhìn thấy gì vậy?
-
-============================================================
-TESTING VLM API
-============================================================
-Endpoint: http://203.162.88.105/pvlm-api/image/analyze-image
-Image: /home/pi/rsbp-demo/images/capture_20251126_192730.jpg
-Prompt: Tôi đang nhìn thấy gì vậy?
-
-Sending request to VLM...
-Status Code: 200
-
-SUCCESS: Got response from VLM
-
-Response JSON:
-{
-  "raw_text": "Tôi không thể nhận diện người trong ảnh. Tuy nhiên, có thể thấy đây là một bức ảnh chụp một người đang nhìn vào máy ảnh. Trong phòng có một máy điều hòa không khí và một số chi tiết nội thất khác."
-}
-
-Checking for response in different keys:
-  ✗ No 'response' key
-  ✗ No 'answer' key
-  ✗ No 'text' key
-  ✗ No 'description' key
-  ✗ No 'analysis' key
-  ✗ No 'result' key
-  ✗ No 'output' key
-
-All keys in response: ['raw_text']
-
-============================================================
-Test complete
-============================================================
+2025-11-26 19:49:42,661 - __main__ - INFO - System initialization complete
+2025-11-26 19:49:42,661 - __main__ - INFO - ============================================================
+2025-11-26 19:49:42,661 - __main__ - INFO - System is ready and running
+2025-11-26 19:49:42,662 - __main__ - INFO - Press the button to start recording
+2025-11-26 19:49:42,662 - __main__ - INFO - ============================================================
+2025-11-26 19:49:45,590 - button_handler - INFO - Button pressed on GPIO 17
+2025-11-26 19:49:45,591 - __main__ - INFO - ============================================================
+2025-11-26 19:49:45,592 - __main__ - INFO - BUTTON PRESS: Starting recording
+2025-11-26 19:49:45,592 - __main__ - INFO - ============================================================
+2025-11-26 19:49:45,593 - audio_recorder - INFO - Found ReSpeaker device: seeed2micvoicec: bcm2835-i2s-tlv320aic3x-hifi tlv320aic3x-hifi-0 (hw:2,0) at index 2
+2025-11-26 19:49:45,665 - audio_recorder - INFO - Recording started: /home/pi/rsbp-demo/audio/recording_20251126_194945.wav
+2025-11-26 19:49:45,666 - __main__ - INFO - Recording started: /home/pi/rsbp-demo/audio/recording_20251126_194945.wav
+2025-11-26 19:49:50,309 - button_handler - INFO - Button pressed on GPIO 17
+2025-11-26 19:49:50,310 - __main__ - INFO - ============================================================
+2025-11-26 19:49:50,310 - __main__ - INFO - BUTTON PRESS: Stopping recording and processing
+2025-11-26 19:49:50,310 - __main__ - INFO - ============================================================
+2025-11-26 19:49:50,343 - audio_recorder - INFO - Recording saved: /home/pi/rsbp-demo/audio/recording_20251126_194945.wav
+2025-11-26 19:49:50,344 - __main__ - INFO - Audio saved: /home/pi/rsbp-demo/audio/recording_20251126_194945.wav
+2025-11-26 19:49:50,344 - __main__ - INFO - Capturing image...
+2025-11-26 19:49:50,345 - image_capture - INFO - Capturing image: /home/pi/rsbp-demo/images/capture_20251126_194950.jpg
+2025-11-26 19:49:52,776 - image_capture - INFO - Image captured successfully: /home/pi/rsbp-demo/images/capture_20251126_194950.jpg
+2025-11-26 19:49:52,777 - __main__ - INFO - Image captured: /home/pi/rsbp-demo/images/capture_20251126_194950.jpg
+2025-11-26 19:49:52,777 - __main__ - INFO - ============================================================
+2025-11-26 19:49:52,777 - __main__ - INFO - Processing with Vision-Language Model
+2025-11-26 19:49:52,778 - __main__ - INFO - ============================================================
+2025-11-26 19:49:52,778 - __main__ - INFO - Step 1: Transcribing audio (STT)...
+2025-11-26 19:49:52,778 - llm_client - INFO - Sending audio for transcription: recording_20251126_194945.wav
+2025-11-26 19:49:53,077 - llm_client - INFO - Transcription successful:  Mọi người đang làm gì thế?...
+2025-11-26 19:49:53,079 - __main__ - INFO - User question:  Mọi người đang làm gì thế?
+2025-11-26 19:49:53,079 - __main__ - INFO - Step 2: Querying Vision-Language Model...
+2025-11-26 19:49:53,080 - __main__ - INFO -   Image: /home/pi/rsbp-demo/images/capture_20251126_194950.jpg
+2025-11-26 19:49:53,080 - __main__ - INFO -   Question:  Mọi người đang làm gì thế?
+2025-11-26 19:49:53,081 - llm_client - INFO - Sending image with prompt:  Mọi người đang làm gì thế?...
+2025-11-26 19:50:17,299 - llm_client - INFO - VLM response received: Tôi không thể xác định chính xác mọi người đang làm gì trong bức ảnh này. Tuy nhiên, có vẻ như có mộ...
+2025-11-26 19:50:17,301 - __main__ - INFO - VLM Answer: Tôi không thể xác định chính xác mọi người đang làm gì trong bức ảnh này. Tuy nhiên, có vẻ như có một người đang ngồi trên sàn, có thể đang sử dụng điện thoại hoặc một thiết bị nào đó. Phòng có vẻ là một không gian sinh hoạt cá nhân với tủ quần áo và một số đồ dùng khác.
+2025-11-26 19:50:17,301 - __main__ - INFO - Step 3: Converting answer to speech (TTS)...
+2025-11-26 19:50:17,302 - llm_client - INFO - Generating speech: Tôi không thể xác định chính xác mọi người đang làm gì trong bức ảnh này. Tuy nhiên, có vẻ như có mộ...
+2025-11-26 19:50:17,322 - llm_client - ERROR - TTS request failed: 422 Client Error: Unprocessable Entity for url: http://203.162.88.105/pvlm-api/tts/generate
+2025-11-26 19:50:17,325 - __main__ - ERROR - Failed to generate speech
+2025-11-26 19:50:17,326 - __main__ - INFO - ============================================================
+2025-11-26 19:50:17,326 - __main__ - INFO - Ready for next query
+2025-11-26 19:50:17,327 - __main__ - INFO - ============================================================
