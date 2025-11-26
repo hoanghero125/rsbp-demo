@@ -4,6 +4,9 @@
 # HTTP client for API communication
 requests>=2.31.0
 
+# Load environment variables from .env file
+python-dotenv>=1.0.0
+
 # Audio input/output handling
 # NOTE: If pip install fails, use system package: sudo apt install python3-pyaudio
 PyAudio>=0.2.13

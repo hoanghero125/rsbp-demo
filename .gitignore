@@ -26,7 +26,6 @@ env/
 ENV/
 
 # Environment variables
-.env
 
 # Audio files
 audio/*.wav

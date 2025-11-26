@@ -6,6 +6,16 @@ Centralizes all system settings, hardware parameters, and API endpoints.
 import os
 from pathlib import Path
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    env_path = Path(__file__).parent / '.env'
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path)
+        print(f"Loaded .env file from: {env_path}")
+except ImportError:
+    print("Warning: python-dotenv not installed. Using system environment variables only.")
+
 # Base directory
 BASE_DIR = Path(__file__).parent.absolute()
 
@@ -19,7 +29,7 @@ AUDIO_DIR.mkdir(exist_ok=True)
 IMAGE_DIR.mkdir(exist_ok=True)
 LOG_DIR.mkdir(exist_ok=True)
 
-# IMPORTANT: API Configuration - loaded from environment variable
+# IMPORTANT: API Configuration - loaded from environment variable or .env file
 API_BASE_URL = os.getenv("API_KEY")
 
 # API Endpoints
