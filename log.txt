@@ -1,22 +1,11 @@
 Enter choice (0-6): 4
-2025-11-26 01:47:13,492 - INFO - 
+2025-11-26 18:14:55,514 - INFO - 
 ============================================================
-2025-11-26 01:47:13,493 - INFO - TEST 4: GPIO Button
-2025-11-26 01:47:13,493 - INFO - ============================================================
-2025-11-26 01:47:13,493 - INFO - ButtonHandler created for GPIO pin 17
-2025-11-26 01:47:13,494 - ERROR - Failed to initialize GPIO: Failed to add edge detection
-2025-11-26 01:47:13,494 - ERROR - Full traceback:
-Traceback (most recent call last):
-  File "/home/pi/rsbp-demo/button_handler.py", line 82, in initialize
-    GPIO.add_event_detect(
-    ~~~~~~~~~~~~~~~~~~~~~^
-        self.pin,
-        ^^^^^^^^^
-    ...<2 lines>...
-        bouncetime=self.debounce_ms
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-RuntimeError: Failed to add edge detection
-2025-11-26 01:47:13,498 - WARNING - WARNING: Could not initialize GPIO (may not be on Raspberry Pi)
-2025-11-26 01:47:13,499 - INFO - GPIO test skipped
+2025-11-26 18:14:55,514 - INFO - TEST 4: GPIO Button
+2025-11-26 18:14:55,514 - INFO - ============================================================
+2025-11-26 18:14:55,515 - INFO - ButtonHandler created for GPIO pin 17
+2025-11-26 18:14:55,515 - ERROR - GPIO RuntimeError: Failed to add edge detection
+2025-11-26 18:14:55,516 - INFO - Attempting to clean up and retry...
+2025-11-26 18:14:55,716 - ERROR - Retry failed: Failed to add edge detection
+2025-11-26 18:14:55,717 - WARNING - WARNING: Could not initialize GPIO (may not be on Raspberry Pi)
+2025-11-26 18:14:55,717 - INFO - GPIO test skipped
