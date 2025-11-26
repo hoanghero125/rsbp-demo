@@ -1,31 +1,38 @@
-2025-11-26 19:22:06,773 - __main__ - INFO - ============================================================
-2025-11-26 19:22:06,773 - __main__ - INFO - System is ready and running
-2025-11-26 19:22:06,773 - __main__ - INFO - Press the button to start recording
-2025-11-26 19:22:06,773 - __main__ - INFO - ============================================================
-2025-11-26 19:22:15,335 - button_handler - INFO - Button pressed on GPIO 17
-2025-11-26 19:22:15,336 - __main__ - INFO - ============================================================
-2025-11-26 19:22:15,337 - __main__ - INFO - BUTTON PRESS: Starting recording
-2025-11-26 19:22:15,337 - __main__ - INFO - ============================================================
-2025-11-26 19:22:15,338 - audio_recorder - INFO - Found ReSpeaker device: seeed2micvoicec: bcm2835-i2s-tlv320aic3x-hifi tlv320aic3x-hifi-0 (hw:2,0) at index 2
-2025-11-26 19:22:15,423 - audio_recorder - INFO - Recording started: /home/pi/rsbp-demo/audio/recording_20251126_192215.wav
-2025-11-26 19:22:15,424 - __main__ - INFO - Recording started: /home/pi/rsbp-demo/audio/recording_20251126_192215.wav
-2025-11-26 19:22:17,957 - button_handler - INFO - Button pressed on GPIO 17
-2025-11-26 19:22:17,958 - __main__ - INFO - ============================================================
-2025-11-26 19:22:17,958 - __main__ - INFO - BUTTON PRESS: Stopping recording and processing
-2025-11-26 19:22:17,958 - __main__ - INFO - ============================================================
-2025-11-26 19:22:17,984 - audio_recorder - INFO - Recording saved: /home/pi/rsbp-demo/audio/recording_20251126_192215.wav
-2025-11-26 19:22:17,986 - __main__ - INFO - Audio saved: /home/pi/rsbp-demo/audio/recording_20251126_192215.wav
-2025-11-26 19:22:17,986 - __main__ - INFO - Capturing image...
-2025-11-26 19:22:17,988 - image_capture - INFO - Capturing image: /home/pi/rsbp-demo/images/capture_20251126_192217.jpg
-2025-11-26 19:22:20,265 - image_capture - INFO - Image captured successfully: /home/pi/rsbp-demo/images/capture_20251126_192217.jpg
-2025-11-26 19:22:20,266 - __main__ - INFO - Image captured: /home/pi/rsbp-demo/images/capture_20251126_192217.jpg
-2025-11-26 19:22:20,267 - __main__ - INFO - ============================================================
-2025-11-26 19:22:20,267 - __main__ - INFO - Processing with Vision-Language Model
-2025-11-26 19:22:20,267 - __main__ - INFO - ============================================================
-2025-11-26 19:22:20,268 - __main__ - INFO - Step 1: Transcribing audio (STT)...
-2025-11-26 19:22:20,268 - llm_client - INFO - Sending audio for transcription: recording_20251126_192215.wav
-2025-11-26 19:22:20,274 - llm_client - ERROR - Transcription request failed: Invalid URL 'None/audio/transcribe': No scheme supplied. Perhaps you meant https://None/audio/transcribe?
-2025-11-26 19:22:20,275 - __main__ - ERROR - Failed to transcribe audio
-2025-11-26 19:22:20,276 - __main__ - INFO - ============================================================
-2025-11-26 19:22:20,277 - __main__ - INFO - Ready for next query
-2025-11-26 19:22:20,278 - __main__ - INFO - ============================================================
+2025-11-26 19:27:17,163 - __main__ - INFO - System initialization complete
+2025-11-26 19:27:17,164 - __main__ - INFO - ============================================================
+2025-11-26 19:27:17,164 - __main__ - INFO - System is ready and running
+2025-11-26 19:27:17,165 - __main__ - INFO - Press the button to start recording
+2025-11-26 19:27:17,165 - __main__ - INFO - ============================================================
+2025-11-26 19:27:27,102 - button_handler - INFO - Button pressed on GPIO 17
+2025-11-26 19:27:27,103 - __main__ - INFO - ============================================================
+2025-11-26 19:27:27,104 - __main__ - INFO - BUTTON PRESS: Starting recording
+2025-11-26 19:27:27,104 - __main__ - INFO - ============================================================
+2025-11-26 19:27:27,105 - audio_recorder - INFO - Found ReSpeaker device: seeed2micvoicec: bcm2835-i2s-tlv320aic3x-hifi tlv320aic3x-hifi-0 (hw:2,0) at index 2
+2025-11-26 19:27:27,178 - audio_recorder - INFO - Recording started: /home/pi/rsbp-demo/audio/recording_20251126_192727.wav
+2025-11-26 19:27:27,178 - __main__ - INFO - Recording started: /home/pi/rsbp-demo/audio/recording_20251126_192727.wav
+2025-11-26 19:27:29,950 - button_handler - INFO - Button pressed on GPIO 17
+2025-11-26 19:27:29,950 - __main__ - INFO - ============================================================
+2025-11-26 19:27:29,950 - __main__ - INFO - BUTTON PRESS: Stopping recording and processing
+2025-11-26 19:27:29,951 - __main__ - INFO - ============================================================
+2025-11-26 19:27:30,000 - audio_recorder - INFO - Recording saved: /home/pi/rsbp-demo/audio/recording_20251126_192727.wav
+2025-11-26 19:27:30,001 - __main__ - INFO - Audio saved: /home/pi/rsbp-demo/audio/recording_20251126_192727.wav
+2025-11-26 19:27:30,001 - __main__ - INFO - Capturing image...
+2025-11-26 19:27:30,002 - image_capture - INFO - Capturing image: /home/pi/rsbp-demo/images/capture_20251126_192730.jpg
+2025-11-26 19:27:32,263 - image_capture - INFO - Image captured successfully: /home/pi/rsbp-demo/images/capture_20251126_192730.jpg
+2025-11-26 19:27:32,264 - __main__ - INFO - Image captured: /home/pi/rsbp-demo/images/capture_20251126_192730.jpg
+2025-11-26 19:27:32,265 - __main__ - INFO - ============================================================
+2025-11-26 19:27:32,265 - __main__ - INFO - Processing with Vision-Language Model
+2025-11-26 19:27:32,265 - __main__ - INFO - ============================================================
+2025-11-26 19:27:32,266 - __main__ - INFO - Step 1: Transcribing audio (STT)...
+2025-11-26 19:27:32,266 - llm_client - INFO - Sending audio for transcription: recording_20251126_192727.wav
+2025-11-26 19:27:33,209 - llm_client - INFO - Transcription successful:  Tôi đang nhìn thấy gì vậy?...
+2025-11-26 19:27:33,210 - __main__ - INFO - User question:  Tôi đang nhìn thấy gì vậy?
+2025-11-26 19:27:33,211 - __main__ - INFO - Step 2: Querying Vision-Language Model...
+2025-11-26 19:27:33,211 - __main__ - INFO -   Image: /home/pi/rsbp-demo/images/capture_20251126_192730.jpg
+2025-11-26 19:27:33,211 - __main__ - INFO -   Question:  Tôi đang nhìn thấy gì vậy?
+2025-11-26 19:27:33,212 - llm_client - INFO - Sending image with prompt:  Tôi đang nhìn thấy gì vậy?...
+2025-11-26 19:27:51,345 - llm_client - WARNING - VLM returned empty response
+2025-11-26 19:27:51,349 - __main__ - ERROR - Failed to get response from VLM
+2025-11-26 19:27:51,350 - __main__ - INFO - ============================================================
+2025-11-26 19:27:51,351 - __main__ - INFO - Ready for next query
+2025-11-26 19:27:51,352 - __main__ - INFO - ============================================================
