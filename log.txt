@@ -1,49 +1,120 @@
-(venv) pi@raspberrypi:~/rsbp-demo $ python3 test_tts.py "Xin chao, toi ten la Do Pham Bao Hoang"
-
-TTS API Test Tool
-
-Test text: Xin chao, toi ten la Do Pham Bao Hoang
+(venv) pi@raspberrypi:~/rsbp-demo $ python3 test_speaker.py 
 
 ============================================================
-TESTING TTS API
+SPEAKER / AUDIO PLAYBACK DEBUG TOOL
 ============================================================
-Endpoint: http://203.162.88.105/pvlm-api/tts/generate
-Text: Xin chao, toi ten la Do Pham Bao Hoang
-Output: /home/pi/rsbp-demo/audio/test_tts_output.wav
-
-========================================
-TEST 1: JSON payload with 'text' field
-========================================
-Payload: {"text": "Xin chao, toi ten la Do Pham Bao Hoang"}
-
-Status Code: 422
-Content-Type: application/json
-
-✗ FAILED with status 422
-Response text:
-{"detail":[{"type":"missing","loc":["body","text"],"msg":"Field required","input":null}]}
-
-
-========================================
-TEST 2: JSON payload with 'prompt' field
-========================================
-Payload: {"prompt": "Xin chao, toi ten la Do Pham Bao Hoang"}
-
-Status Code: 422
-✗ FAILED with status 422
-Response text:
-{"detail":[{"type":"missing","loc":["body","text"],"msg":"Field required","input":null}]}
-
-========================================
-TEST 3: Form data with 'text' field
-========================================
-Form data: {'text': 'Xin chao, toi ten la Do Pham Bao Hoang'}
-
-Status Code: 200
-✓ SUCCESS with form data {'text': ...}
-✓ Audio saved to: /home/pi/rsbp-demo/audio/test_tts_output.wav
 
 ============================================================
-✓ At least one test method succeeded!
-Check audio file: /home/pi/rsbp-demo/audio/test_tts_output.wav
+TEST 1: Audio Devices
 ============================================================
+Listing playback devices:
+**** List of PLAYBACK Hardware Devices ****
+card 0: Headphones [bcm2835 Headphones], device 0: bcm2835 Headphones [bcm2835 Headphones]
+  Subdevices: 8/8
+  Subdevice #0: subdevice #0
+  Subdevice #1: subdevice #1
+  Subdevice #2: subdevice #2
+  Subdevice #3: subdevice #3
+  Subdevice #4: subdevice #4
+  Subdevice #5: subdevice #5
+  Subdevice #6: subdevice #6
+  Subdevice #7: subdevice #7
+card 1: vc4hdmi [vc4-hdmi], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: seeed2micvoicec [seeed2micvoicec], device 0: bcm2835-i2s-tlv320aic3x-hifi tlv320aic3x-hifi-0 [bcm2835-i2s-tlv320aic3x-hifi tlv320aic3x-hifi-0]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+
+============================================================
+TEST 2: Volume Settings
+============================================================
+Checking volume with amixer:
+Simple mixer control 'Master',0
+  Capabilities: pvolume pswitch pswitch-joined
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 65536
+  Mono:
+  Front Left: Playback 65536 [100%] [on]
+  Front Right: Playback 65536 [100%] [on]
+
+
+============================================================
+TEST 3: Audio Files
+============================================================
+Audio directory: /home/pi/rsbp-demo/audio
+
+✓ Found 2 WAV file(s):
+  1. response_20251127_001323.wav (892734 bytes)
+  2. recording_20251127_001255.wav (73772 bytes)
+
+➜ Using latest file: response_20251127_001323.wav
+
+============================================================
+TEST 4: Audio File Format
+============================================================
+File: response_20251127_001323.wav
+  Channels: 1
+  Sample width: 2 bytes
+  Frame rate: 24000 Hz
+  Frames: 446328
+  Duration: 18.60 seconds
+
+------------------------------------------------------------
+Press Enter to test audio playback (default device)...
+
+============================================================
+TEST 5: Play with aplay (default device)
+============================================================
+Playing: response_20251127_001323.wav
+Command: aplay <file>
+
+✓ aplay completed successfully
+Did you hear sound? (Check speaker)
+
+------------------------------------------------------------
+Press Enter to run speaker-test utility...
+
+============================================================
+TEST 7: Speaker Test Utility
+============================================================
+Running speaker-test (2 seconds, 440Hz tone)
+Command: speaker-test -t sine -f 440 -l 1
+
+Output: 
+speaker-test 1.2.14
+
+Playback device is default
+Stream parameters are 48000Hz, S16_LE, 1 channels
+Sine wave rate is 440.0000Hz
+Rate set to 48000Hz (requested 48000Hz)
+Buffer size range from 192 to 2097152
+Period size range from 64 to 699051
+Periods = 4
+was set period_size = 12000
+was set buffer_size = 48000
+ 0 - Front Left
+Time per period = 2.052538
+
+
+Did you hear a tone?
+
+============================================================
+TROUBLESHOOTING TIPS
+============================================================
+
+If no sound:
+  1. Check speaker is connected to ReSpeaker HAT
+  2. Check volume: amixer sget Master
+  3. Unmute if needed: amixer sset Master unmute
+  4. Set volume: amixer sset Master 80%
+  5. Check audio device in aplay -l
+  6. Try different device with: aplay -D hw:X,Y file.wav
+
+If running as systemd service:
+  - Service may not have access to audio devices
+  - Check journalctl logs: sudo journalctl -u disability-support -n 50
+  - Try adding User to 'audio' group: sudo usermod -a -G audio pi
+
+(venv) pi@raspberrypi:~/rsbp-demo $ 
