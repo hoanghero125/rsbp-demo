@@ -10,8 +10,9 @@ from threading import Thread
 logger = logging.getLogger(__name__)
 
 # Try to import apa102 library
+# NOTE: apa102-pi library uses apa102_pi.driver.apa102
 try:
-    from apa102 import APA102
+    from apa102_pi.driver import apa102
     APA102_AVAILABLE = True
 except ImportError:
     APA102_AVAILABLE = False
@@ -82,10 +83,10 @@ class LEDController:
 
         try:
             # Initialize APA102 strip
-            # Parameters: num_leds, global_brightness (0-31), order='rgb'
-            self.strip = APA102(num_led=self.num_leds,
-                               global_brightness=10,  # Brightness 0-31
-                               order='rgb')
+            # Parameters: num_led, global_brightness (0-31), order='rgb'
+            self.strip = apa102.APA102(num_led=self.num_leds,
+                                       global_brightness=10,  # Brightness 0-31 (10 = moderate)
+                                       order='rgb')
 
             # Turn off all LEDs initially
             self.clear()
