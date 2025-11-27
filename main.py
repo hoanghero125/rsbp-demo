@@ -15,6 +15,7 @@ from image_capture import ImageCapture
 from audio_playback import AudioPlayback
 from llm_client import LLMClient
 from button_handler import ButtonHandler
+from led_controller import LEDController
 
 # Configure logging
 logging.basicConfig(
@@ -53,6 +54,7 @@ class DisabilitySupportSystem:
         self.player = AudioPlayback()
         self.llm_client = LLMClient()
         self.button = ButtonHandler(callback=self.on_button_press)
+        self.led = LEDController(num_leds=3)  # ReSpeaker 2-Mics HAT has 3 LEDs
 
         # System state
         self.is_recording = False
@@ -82,6 +84,14 @@ class DisabilitySupportSystem:
         if not self.button.initialize():
             logger.warning("Button handler initialization failed - continuing anyway")
 
+        # Initialize LED controller
+        if not self.led.initialize():
+            logger.warning("LED controller initialization failed - continuing anyway")
+        else:
+            # Test LEDs if initialized successfully
+            logger.info("Testing LEDs...")
+            self.led.test_leds()
+
         # Test camera
         if not self.camera.test_camera():
             logger.warning("Camera test failed - continuing anyway")
@@ -89,6 +99,9 @@ class DisabilitySupportSystem:
         # Test audio playback
         if not self.player.test_playback():
             logger.warning("Audio playback test failed - will use fallback")
+
+        # Set LED to IDLE state
+        self.led.set_state(LEDController.STATE_IDLE)
 
         logger.info("System initialization complete")
         return True
@@ -120,6 +133,9 @@ class DisabilitySupportSystem:
         logger.info("BUTTON PRESS: Starting recording")
         logger.info("="*60)
 
+        # Set LED to RECORDING state (Red)
+        self.led.set_state(LEDController.STATE_RECORDING)
+
         self.current_audio_file = self.recorder.start_recording()
 
         if self.current_audio_file:
@@ -127,6 +143,7 @@ class DisabilitySupportSystem:
             logger.info(f"Recording started: {self.current_audio_file}")
         else:
             logger.error("Failed to start recording")
+            self.led.set_state(LEDController.STATE_ERROR)
 
     def stop_recording_and_process(self):
         """
@@ -153,6 +170,7 @@ class DisabilitySupportSystem:
             audio_file = self.recorder.stop_recording()
             if not audio_file:
                 logger.error("Failed to save audio recording")
+                self.led.set_state(LEDController.STATE_ERROR)
                 self.is_processing = False
                 return
 
@@ -160,9 +178,13 @@ class DisabilitySupportSystem:
 
             # Step 2: Capture image
             logger.info("Capturing image...")
+            # Set LED to CAPTURING state (Yellow)
+            self.led.set_state(LEDController.STATE_CAPTURING)
+
             image_file = self.camera.capture_image()
             if not image_file:
                 logger.error("Failed to capture image")
+                self.led.set_state(LEDController.STATE_ERROR)
                 self.is_processing = False
                 return
 
@@ -173,10 +195,14 @@ class DisabilitySupportSystem:
             logger.info("Processing with Vision-Language Model")
             logger.info("="*60)
 
+            # Set LED to PROCESSING state (Rotating Cyan)
+            self.led.set_state(LEDController.STATE_PROCESSING)
+
             logger.info("Step 1: Transcribing audio (STT)...")
             user_question = self.llm_client.transcribe_audio(audio_file)
             if not user_question:
                 logger.error("Failed to transcribe audio")
+                self.led.set_state(LEDController.STATE_ERROR)
                 self.is_processing = False
                 return
 
@@ -192,6 +218,7 @@ class DisabilitySupportSystem:
             final_answer = self.llm_client.analyze_image(image_file, prompt=user_question)
             if not final_answer:
                 logger.error("Failed to get response from VLM")
+                self.led.set_state(LEDController.STATE_ERROR)
                 self.is_processing = False
                 return
 
@@ -202,6 +229,7 @@ class DisabilitySupportSystem:
             response_audio = self.llm_client.generate_speech(final_answer)
             if not response_audio:
                 logger.error("Failed to generate speech")
+                self.led.set_state(LEDController.STATE_ERROR)
                 self.is_processing = False
                 return
 
@@ -212,16 +240,24 @@ class DisabilitySupportSystem:
             logger.info("Playing response")
             logger.info("="*60)
 
+            # Set LED to SPEAKING state (Pulsing Blue)
+            self.led.set_state(LEDController.STATE_SPEAKING)
+
             if self.player.play_audio(response_audio, blocking=True):
                 logger.info("Response played successfully")
             else:
                 logger.error("Failed to play response")
+                self.led.set_state(LEDController.STATE_ERROR)
 
         except Exception as e:
             logger.error(f"Error during processing: {e}")
+            self.led.set_state(LEDController.STATE_ERROR)
+            time.sleep(2)  # Show error for 2 seconds
 
         finally:
             self.is_processing = False
+            # Return LED to IDLE state
+            self.led.set_state(LEDController.STATE_IDLE)
             logger.info("="*60)
             logger.info("Ready for next query")
             logger.info("="*60)
@@ -272,6 +308,7 @@ class DisabilitySupportSystem:
             self.camera.cleanup()
             self.player.cleanup()
             self.button.cleanup()
+            self.led.cleanup()
 
             logger.info("System shutdown complete")
 

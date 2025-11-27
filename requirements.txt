@@ -11,6 +11,9 @@ python-dotenv>=1.0.0
 # NOTE: If pip install fails, use system package: sudo apt install python3-pyaudio
 PyAudio>=0.2.13
 
+# LED control for ReSpeaker 2-Mics HAT (APA102 RGB LEDs)
+apa102-pi>=2.4.1
+
 # GPIO control for Raspberry Pi
 # IMPORTANT: You MUST install the system package first:
 #   sudo apt install python3-rpi.gpio
