@@ -1,32 +1,87 @@
-(venv) pi@raspberrypi:~/rsbp-demo $ sudo systemctl stop disability-support.service 
-(venv) pi@raspberrypi:~/rsbp-demo $ sudo systemctl disable disability-support.service 
-Removed '/etc/systemd/system/multi-user.target.wants/disability-support.service'.
-(venv) pi@raspberrypi:~/rsbp-demo $ sudo rm /etc/systemd/system/disability-support.service 
-(venv) pi@raspberrypi:~/rsbp-demo $ sudo systemctl daemon-reload
-(venv) pi@raspberrypi:~/rsbp-demo $ mkdir -p ~/.config/systemd/user/
-(venv) pi@raspberrypi:~/rsbp-demo $ cp ~/rsbp-demo/disability-support.service ~/.config/systemd/user/
-(venv) pi@raspberrypi:~/rsbp-demo $ systemctl --user daemon-reload
-(venv) pi@raspberrypi:~/rsbp-demo $ systemctl --user enable disability-support.service 
-Created symlink '/home/pi/.config/systemd/user/multi-user.target.wants/disability-support.service' → '/home/pi/.config/systemd/user/disability-support.service'.
-Unit /home/pi/.config/systemd/user/disability-support.service is added as a dependency to a non-existent unit multi-user.target.
-(venv) pi@raspberrypi:~/rsbp-demo $ systemctl --user start disability-support.service 
-(venv) pi@raspberrypi:~/rsbp-demo $ sudo loginctl enable-linger pi
-(venv) pi@raspberrypi:~/rsbp-demo $ systemctl --user status disability-support.service 
-● disability-support.service - Disability Support System
-     Loaded: loaded (/home/pi/.config/systemd/user/disability-support.service; enabled; preset: enabled)
-     Active: activating (auto-restart) (Result: exit-code) since Thu 2025-11-27 00:27:16 +07; 7s ago
- Invocation: ef1ac77862ca418c969927581fe5aa92
-    Process: 6701 ExecStart=/home/pi/rsbp-demo/venv/bin/python3 /home/pi/rsbp-demo/main.py (code=exited, status=216/GROUP)
-   Main PID: 6701 (code=exited, status=216/GROUP)
-        CPU: 60ms
-(venv) pi@raspberrypi:~/rsbp-demo $ systemctl --user status disability-support.service 
-● disability-support.service - Disability Support System
-     Loaded: loaded (/home/pi/.config/systemd/user/disability-support.service; enabled; preset: enabled)
-     Active: activating (auto-restart) (Result: exit-code) since Thu 2025-11-27 00:27:47 +07; 9s ago
- Invocation: bcf05e7148544f3ea47826343657c546
-    Process: 6713 ExecStart=/home/pi/rsbp-demo/venv/bin/python3 /home/pi/rsbp-demo/main.py (code=exited, status=216/GROUP)
-   Main PID: 6713 (code=exited, status=216/GROUP)
-        CPU: 57ms
+(venv) pi@raspberrypi:~/rsbp-demo $ ./setup_leds.sh 
+==========================================
+ReSpeaker 2-Mics HAT LED Setup Script
+==========================================
 
-Nov 27 00:27:47 raspberrypi systemd[920]: disability-support.service: Main process exited, code=exited, status=216/GROUP
-Nov 27 00:27:47 raspberrypi systemd[920]: disability-support.service: Failed with result 'exit-code'.
+Step 1: Checking SPI interface...
+✓ SPI interface is enabled
+
+Step 2: Checking SPI permissions...
+✓ User pi is in spi group
+
+Step 3: Installing apa102-pi library...
+Installing apa102-pi...
+Requirement already satisfied: apa102-pi in ./venv/lib/python3.13/site-packages (2.5.4)
+Requirement already satisfied: adafruit-circuitpython-bitbangio in ./venv/lib/python3.13/site-packages (from apa102-pi) (1.3.20)
+Requirement already satisfied: adafruit-circuitpython-busdevice in ./venv/lib/python3.13/site-packages (from apa102-pi) (5.2.14)
+Requirement already satisfied: Adafruit-Blinka in ./venv/lib/python3.13/site-packages (from adafruit-circuitpython-bitbangio->apa102-pi) (8.68.0)
+Requirement already satisfied: typing-extensions~=4.0 in /usr/lib/python3/dist-packages (from adafruit-circuitpython-bitbangio->apa102-pi) (4.13.2)
+Requirement already satisfied: Adafruit-PlatformDetect>=3.70.1 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (3.85.0)
+Requirement already satisfied: Adafruit-PureIO>=1.1.7 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.1.11)
+Requirement already satisfied: binho-host-adapter>=0.1.6 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (0.1.6)
+Requirement already satisfied: pyftdi>=0.40.0 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (0.57.1)
+Requirement already satisfied: adafruit-circuitpython-typing in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.12.3)
+Requirement already satisfied: sysv_ipc>=1.1.0 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.1.0)
+Requirement already satisfied: pyserial in /usr/lib/python3/dist-packages (from binho-host-adapter>=0.1.6->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (3.5)
+Requirement already satisfied: pyusb!=1.2.0,>=1.0.0 in ./venv/lib/python3.13/site-packages (from pyftdi>=0.40.0->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.3.1)
+Requirement already satisfied: adafruit-circuitpython-requests in ./venv/lib/python3.13/site-packages (from adafruit-circuitpython-typing->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (4.1.15)
+Requirement already satisfied: Adafruit-Circuitpython-ConnectionManager in ./venv/lib/python3.13/site-packages (from adafruit-circuitpython-requests->adafruit-circuitpython-typing->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (3.1.6)
+✓ apa102-pi installed successfully
+
+Step 4: Testing LED controller...
+apa102 library not found - LED control will be disabled
+Testing LED Controller...
+INFO:__main__:LED Controller initialized with 3 LEDs
+WARNING:__main__:apa102 library not available - LED disabled
+Failed to initialize LED controller
+
+✓ LED test completed successfully!
+
+==========================================
+✓ LED Setup Complete!
+==========================================
+
+LED is now ready to use!
+
+Color states:
+  🟢 Green (IDLE)       - Waiting for input
+  🔴 Red (RECORDING)    - Recording audio
+  🟡 Yellow (CAPTURING) - Taking photo
+  🔵 Cyan (PROCESSING)  - Processing with AI
+  🔵 Blue (SPEAKING)    - Playing audio
+  🔴 Red Blink (ERROR)  - System error
+
+Next steps:
+  1. Run main.py: python3 main.py
+  2. Observe LED colors change during operation
+  3. Enjoy visual feedback! 🎨
+
+(venv) pi@raspberrypi:~/rsbp-demo $ python3 led_controller.py 
+apa102 library not found - LED control will be disabled
+Testing LED Controller...
+INFO:__main__:LED Controller initialized with 3 LEDs
+WARNING:__main__:apa102 library not available - LED disabled
+Failed to initialize LED controller
+(venv) pi@raspberrypi:~/rsbp-demo $ pip install apa102-pi
+Requirement already satisfied: apa102-pi in ./venv/lib/python3.13/site-packages (2.5.4)
+Requirement already satisfied: adafruit-circuitpython-bitbangio in ./venv/lib/python3.13/site-packages (from apa102-pi) (1.3.20)
+Requirement already satisfied: adafruit-circuitpython-busdevice in ./venv/lib/python3.13/site-packages (from apa102-pi) (5.2.14)
+Requirement already satisfied: Adafruit-Blinka in ./venv/lib/python3.13/site-packages (from adafruit-circuitpython-bitbangio->apa102-pi) (8.68.0)
+Requirement already satisfied: typing-extensions~=4.0 in /usr/lib/python3/dist-packages (from adafruit-circuitpython-bitbangio->apa102-pi) (4.13.2)
+Requirement already satisfied: Adafruit-PlatformDetect>=3.70.1 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (3.85.0)
+Requirement already satisfied: Adafruit-PureIO>=1.1.7 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.1.11)
+Requirement already satisfied: binho-host-adapter>=0.1.6 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (0.1.6)
+Requirement already satisfied: pyftdi>=0.40.0 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (0.57.1)
+Requirement already satisfied: adafruit-circuitpython-typing in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.12.3)
+Requirement already satisfied: sysv_ipc>=1.1.0 in ./venv/lib/python3.13/site-packages (from Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.1.0)
+Requirement already satisfied: pyserial in /usr/lib/python3/dist-packages (from binho-host-adapter>=0.1.6->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (3.5)
+Requirement already satisfied: pyusb!=1.2.0,>=1.0.0 in ./venv/lib/python3.13/site-packages (from pyftdi>=0.40.0->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (1.3.1)
+Requirement already satisfied: adafruit-circuitpython-requests in ./venv/lib/python3.13/site-packages (from adafruit-circuitpython-typing->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (4.1.15)
+Requirement already satisfied: Adafruit-Circuitpython-ConnectionManager in ./venv/lib/python3.13/site-packages (from adafruit-circuitpython-requests->adafruit-circuitpython-typing->Adafruit-Blinka->adafruit-circuitpython-bitbangio->apa102-pi) (3.1.6)
+(venv) pi@raspberrypi:~/rsbp-demo $ python3 led_controller.py 
+apa102 library not found - LED control will be disabled
+Testing LED Controller...
+INFO:__main__:LED Controller initialized with 3 LEDs
+WARNING:__main__:apa102 library not available - LED disabled
+Failed to initialize LED controller
+(venv) pi@raspberrypi:~/rsbp-demo $ 
